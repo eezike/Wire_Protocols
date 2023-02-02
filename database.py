@@ -9,7 +9,7 @@ class Database:
         # Create the User and Message table
         with closing(self.conn.cursor()) as cursor:
             cursor.execute("""CREATE TABLE IF NOT EXISTS Users (username TEXT PRIMARY KEY, password TEXT NOT NULL)""")
-            cursor.execute("""CREATE TABLE IF NOT EXISTS Messages (id INTEGER PRIMARY KEY AUTOINCREMENT, _to TEXT, _from TEXT, message TEXT NOT NULL, FOREIGN KEY (_to) REFERENCES Users(username), FOREIGN KEY (_from) REFERENCES Users(username)) """)
+            cursor.execute("""CREATE TABLE IF NOT EXISTS Messages (id INTEGER PRIMARY KEY, _to TEXT, _from TEXT, message TEXT NOT NULL, FOREIGN KEY (_to) REFERENCES Users(username), FOREIGN KEY (_from) REFERENCES Users(username)) """)
             
             self.conn.commit()
     
@@ -18,7 +18,7 @@ class Database:
         with closing(self.conn.cursor()) as cursor:
             res = cursor.execute("SELECT username, password FROM Users WHERE username = ?", (username,)).fetchall()
             if len(res) > 0:
-                print("Error: account exists")
+                print("Error: [register] account exists")
                 return
 
             cursor.execute("INSERT INTO Users (username, password) VALUES (?, ?)", (username, password))
@@ -32,13 +32,13 @@ class Database:
             res = cursor.execute("SELECT username, password FROM Users WHERE username = ?", (username,)).fetchall()
 
             if len(res) != 1:
-                print("Error: Account does not exist")
+                print("Error: [login] Account does not exist")
                 return
             
             _, password = res[0]
             
             if password != attempted_password:
-                print("Wrong password")
+                print("Error: [login] Wrong password")
                 return
             
         return username
@@ -72,25 +72,8 @@ class Database:
 
             res = cursor.execute("SELECT username FROM Users WHERE username = ?", (username,)).fetchall()
             if len(res) == 0:
-                print("Error: account does not exist")
+                print("Error: [delete_user] account does not exist")
                 return
 
             cursor.execute("DELETE FROM Users WHERE username = ?", (username,))
             self.conn.commit()
-
-    
-
-db = Database()
-db.register('victor', 'error') # register: double account
-db.login('victor', '1234') # login: wrong password 
-db.register('user1', '12345')
-
-db.login('victor', '12345')
-db.login('user1', '12345')
-
-db.save_message('victor', 'user1', 'sup bitch')
-db.save_message('victor', 'user1', 'hows life')
-
-db.get_messages("victor")
-db.get_messages("victor") # get_messages: should return no messages
-

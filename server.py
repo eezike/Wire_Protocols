@@ -29,9 +29,8 @@ class Server:
 	def listen(self, listeners = 100):
 		"""
 		listens for 100 active clientsocketections. This number can be
-		increased as per convenience.
+		modified as per convenience.
 		"""
-		
 		print(f"Listening on port {self.PORT}")
 		self.server.listen(listeners)
 		
@@ -42,7 +41,6 @@ class Server:
 		self.listen()
 
 		while 1:
-
 			"""Accepts a clientsocket request and stores two parameters,
 			clientsocket which is a socket object for that user, and addr
 			which contains the IP address of the client that just

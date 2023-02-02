@@ -6,13 +6,12 @@ class Database:
     def __init__(self):
         self.conn = sqlite3.connect("chatroom.db")
 
-        # Create the User and Message table
+        # Creates Users and Messages table if it does not exist
         with closing(self.conn.cursor()) as cursor:
             cursor.execute("""CREATE TABLE IF NOT EXISTS Users (username TEXT PRIMARY KEY, password TEXT NOT NULL)""")
             cursor.execute("""CREATE TABLE IF NOT EXISTS Messages (id INTEGER PRIMARY KEY, _to TEXT, _from TEXT, message TEXT NOT NULL, FOREIGN KEY (_to) REFERENCES Users(username), FOREIGN KEY (_from) REFERENCES Users(username)) """)
             
             self.conn.commit()
-    
     
     def register(self, username:str, password:str) -> str:
         with closing(self.conn.cursor()) as cursor:
@@ -64,8 +63,6 @@ class Database:
                 self.delete_message(msg_id)
             
             return [(_from, msg) for _, _from, msg in res]
-        
-        
 
     def delete_user(self, username: str):
         with closing(self.conn.cursor()) as cursor:

@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import messagebox
-import database
+import backend.database as database
 
 db = database.Database()
 
@@ -108,7 +108,7 @@ class RegisterPage(tk.Frame):
             messagebox.showerror("Register Failed", "Username or password cannot be empty")
         # Try to add account to database
         # TODO: should we make a global database instance?
-        elif db.register(username, password) == None:
+        elif self.master.db.register(username, password) == None:
             messagebox.showerror("Register Failed", "Account already exists")
         else:
             messagebox.showinfo("Register Successful", "Account created successfully!")
@@ -152,9 +152,10 @@ class Application(tk.Tk):
         self._frame = None
         self.geometry("400x350")
         self.switch_frame(LoginPage)
-        # self.title("Chatroom")
-        # self.geometry("850x300")
-        # self.switch_frame(HomePage)
+        self.title("Chatroom")
+        self.geometry("850x300")
+        # Use one instance of a database per application--put in master variable
+        self.db = db 
 
     def switch_frame(self, frame_class):
         new_frame = frame_class(self)

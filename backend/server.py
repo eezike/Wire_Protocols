@@ -1,13 +1,13 @@
 # Python program to implement server side of chat room.
 import socket
 import threading
-import sqlite3
+import backend.database as database
 
 class Server:
 
 	def __init__(self, port = 9999):
 		self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+		# self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 		self.clients = dict()
 
 		# retreives IP on host computer
@@ -16,29 +16,16 @@ class Server:
 		# takes argument from command prompt as port number
 		self.PORT = port
 
-		self.current_users = dict()
-	
-	def bind(self):
-		"""
-		binds the server to an entered IP address and at the
-		specified port number.
-		The client must be aware of these parameters
-		"""
-		self.server.bind((self.HOST, self.PORT))
-	
-	def listen(self, listeners = 100):
-		"""
-		listens for 100 active clientsocketections. This number can be
-		modified as per convenience.
-		"""
-		print(f"Listening on port {self.PORT}")
-		self.server.listen(listeners)
-		
+		# initialize the database with the server
+		self.db = database.Database()
 
+		self.current_users = dict()
+		
 	def run(self):
 
-		self.bind()
-		self.listen()
+		self.server.bind((self.HOST, self.PORT))
+		self.server.listen(10)
+		print(f"Listening on port {self.PORT}")
 
 		while 1:
 			"""Accepts a clientsocket request and stores two parameters,
@@ -47,11 +34,24 @@ class Server:
 			clientsocket"""
 			clientsocket, addr = self.server.accept()
 
-			self.current_users = []
+			self.current_users[addr] = {"socket": clientsocket, "username": None}
 
 			print(addr[0] + " has joined")
 
-			threading.Thread(target = handle_client, args = (clientsocket, addr)).start()
+			# 
+			threading.Thread(target = self.authenticate, args = (clientsocket, addr)).start()
+
+def authenticate(self, clientsocket, addr):
+	# Check if user is logging in or registering
+	pass
+	# blah blah wire protocol blah blah got user name and password and register/login type already
+
+	username = ""
+	password = ""
+	message_type = 0
+
+	if message_type == 
+
 
 
 def handle_client(clientsocket, addr):

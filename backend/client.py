@@ -6,6 +6,7 @@
 import socket
 import select
 import threading
+
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 host = "10.250.150.39"

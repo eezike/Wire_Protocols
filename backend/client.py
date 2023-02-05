@@ -6,6 +6,7 @@
 import socket
 import select
 import threading
+from wireprotocol as wp
 
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -17,18 +18,13 @@ name = input("Name: ")
 
 
 def send_info():
-    while True:
-        message = input()
 
-        if message == "close":
-            break
+    username = input("Username: ")
+    password = input("Password: ")
 
-        message = "< " + name + " >: " + message
-
-        msg = message.encode("ascii")
-        client.send(msg)
+    wp.send(client, wp.MSG_TYPES.LOGIN, username=username, password=password)
     
-    client.close()
+    # client.close()
 
 def receive_info():
     while True:

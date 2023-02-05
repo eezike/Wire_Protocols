@@ -1,13 +1,15 @@
 # Python program to implement server side of chat room.
 import socket
 import threading
-import backend.database as database
+import database
+from wireprotocol as wp
 
 class Server:
 
 	def __init__(self, port = 9999):
 		self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		# self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
 		self.clients = dict()
 
 		# retreives IP on host computer
@@ -19,6 +21,7 @@ class Server:
 		# initialize the database with the server
 		self.db = database.Database()
 
+		self.current_sockets = dict()
 		self.current_users = dict()
 		
 	def run(self):
@@ -34,60 +37,51 @@ class Server:
 			clientsocket"""
 			clientsocket, addr = self.server.accept()
 
-			self.current_users[addr] = {"socket": clientsocket, "username": None}
+			self.current_sockets[addr] = clientsocket
 
 			print(addr[0] + " has joined")
 
-			# 
 			threading.Thread(target = self.authenticate, args = (clientsocket, addr)).start()
+	
+	def authenticate(self, clientsocket, addr):
+		message_type, payload = wp.receive_message(clientsocket)
+		if message_type == wp.MSG_TYPES.LOGIN:
+			user, password = wp.unpack_payload(message_type, payload)
 
-def authenticate(self, clientsocket, addr):
-	# Check if user is logging in or registering
-	pass
-	# blah blah wire protocol blah blah got user name and password and register/login type already
-
-	username = ""
-	password = ""
-	message_type = 0
-
-	if message_type == 
-
-
-
-def handle_client(clientsocket, addr):
-
-	# sends a message to the client whose user object is clientsocket
-	clientsocket.send("Welcome to this chatroom!".encode("ascii"))
-
-	while True:
-		try:
-			message = clientsocket.recv(2048)
-			if message:
-				broadcast(message)
-
+			if self.db.login(username, password) != None:
+				# broadcast login success
 			else:
-				"""message may have no content if the clientsocketection
-				is broken, in this case we remove the clientsocketection"""
-				remove(addr)
+				# broadcase login error
 
-		except:
-			continue
+		elif message_type == wp.MSG_TYPES.REGISTER:
+			username, password = wp.unpack_payload(message_type, payload)
 
-"""Using the below function, we broadcast the message to all
-clients who's object is not the same as the one sending
-the message """
-def broadcast(message):
-	for addr, clientsocket in clients.items():
-		try:
-			clientsocket.send(message)
-		except:
-			clientsocket.close()
+			if self.db.register(username, password) != None:
+				wp.send(clientsocket, wp.)
+				self.current_sockets[username] = clientsocket
+			else:
+				# broadcase register error
+		else:
+			# broadcast 
+			pass
 
-			# if the link is broken, we remove the client
-			remove(addr)
+	def handle_client(self, clientsocket, addr):
 
-def remove(addr):
-	del clients[addr]
+		# sends a message to the client whose user object is clientsocket
+		clientsocket.send("Welcome to this chatroom!".encode("ascii"))
 
-clientsocket.close()
+		while True:
+			try:
 
+				message_type, payload = wp.receive_message(clientsocket)
+				user, password = wp.unpack_payload(message_type, payload)
+
+				print(user, password)
+				
+
+
+			except:
+				continue
+
+server = Server()
+server.run()

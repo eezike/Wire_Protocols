@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import messagebox
 from frontend.homepage import HomePage
 from frontend.registerpage import RegisterPage
+import wireprotocol as wp
 
 class LoginPage(tk.Frame):
     def __init__(self, master):
@@ -53,19 +54,38 @@ class LoginPage(tk.Frame):
     def connect(self):
         host = self.host_entry.get()
         port = self.port_entry.get()
-        
 
-    
+        return self.master.client.connect(host, port)
+        
     def login(self):
+        if not self.connect():
+            messagebox.showerror("Connection Timeout", "Invalid host or port")
+
+        username = self.username_entry.get()
+        password = self.password_entry.get()
+
+        # response = self.master.client.send_login(username, password)
+
+        # # Check server response before logging in
+        # if len(username) == 0 or len(password) == 0:
+        #     messagebox.showerror("Register Failed", "Username or password cannot be empty")
+        # elif response == wp.RESPONSE_CODE.LOGIN_SUCCESS:
+        #     messagebox.showinfo("Login Successful", "Welcome " + username + "!")
+        #     self.master.switch_frame(HomePage)
+        # else:
+        #     messagebox.showerror("Login Failed", "Invalid username or password")
+            
+    def register(self):
         self.connect()
         username = self.username_entry.get()
         password = self.password_entry.get()
-        
-        if self.master.db.login(username, password) == None:
-            messagebox.showerror("Login Failed", "Invalid username or password")
-        else:
-            messagebox.showinfo("Login Successful", "Welcome " + username + "!")
-            self.master.switch_frame(HomePage)
 
-    def register(self):
-        self.master.switch_frame(RegisterPage)
+        # Check if input is valid
+        if len(username) == 0 or len(password) == 0:
+            messagebox.showerror("Register Failed", "Username or password cannot be empty")
+        # Try to add account to database
+        elif self.master.db.register(username, password) == None:
+            messagebox.showerror("Register Failed", "Account already exists")
+        else:
+            messagebox.showinfo("Register Successful", "Account created successfully!")
+            self.master.switch_frame(HomePage)

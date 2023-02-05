@@ -42,9 +42,6 @@ def encode_message(msg_type, **kwargs):
     
     return pack_message(msg_type, pack_message(request))
 
-def decode_message
-
-
 # Define the maximum size for the payload
 MAX_PAYLOAD_SIZE = 1024
 
@@ -75,35 +72,35 @@ def send_message(socket, message_type, payload):
     socket.sendall(message)
 
 
-# Pack header, login request into a single message
-def pack_login_request(username, password):
-    login_request = struct.pack(LOGIN_REQUEST_FORMAT, username.encode(), password.encode())
-    return pack_message(1, login_request)
+# # Pack header, login request into a single message
+# def pack_login_request(username, password):
+#     login_request = struct.pack(LOGIN_REQUEST_FORMAT, username.encode(), password.encode())
+#     return pack_message(1, login_request)
 
-# Unpack header, login request from a single message
-def unpack_login_request(message):
-    message_id, login_request = unpack_message(message)
-    username, password = struct.unpack(LOGIN_REQUEST_FORMAT, login_request)
-    return username.decode(), password.decode()
+# # Unpack header, login request from a single message
+# def unpack_login_request(message):
+#     message_id, login_request = unpack_message(message)
+#     username, password = struct.unpack(LOGIN_REQUEST_FORMAT, login_request)
+#     return username.decode(), password.decode()
 
-# Pack header, login response into a single message
-def pack_login_response(status):
-    login_response = struct.pack(LOGIN_RESPONSE_FORMAT, status)
-    return pack_message(2, login_response)
+# # Pack header, login response into a single message
+# def pack_login_response(status):
+#     login_response = struct.pack(LOGIN_RESPONSE_FORMAT, status)
+#     return pack_message(2, login_response)
 
-# Unpack header, login response from a single message
-def unpack_login_response(message):
-    message_id, login_response = unpack_message(message)
-    status, = struct.unpack(LOGIN_RESPONSE_FORMAT, login_response)
-    return status
+# # Unpack header, login response from a single message
+# def unpack_login_response(message):
+#     message_id, login_response = unpack_message(message)
+#     status, = struct.unpack(LOGIN_RESPONSE_FORMAT, login_response)
+#     return status
 
-# Example usage
-message = pack_login_request("john", "doe")
-username, password = unpack_login_request(message)
-print(username, password)
-# Output: john doe
+# # Example usage
+# message = pack_login_request("john", "doe")
+# username, password = unpack_login_request(message)
+# print(username, password)
+# # Output: john doe
 
-message = pack_login_response(0)
-status = unpack_login_response(message)
-print(status)
-# Output: 0
+# message = pack_login_response(0)
+# status = unpack_login_response(message)
+# print(status)
+# # Output: 0

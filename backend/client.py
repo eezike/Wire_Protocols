@@ -6,31 +6,34 @@
 import socket
 import select
 import threading
-from wireprotocol as wp
+import wireprotocol as wp
 
-client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+class Client:
+    def __init__(self):
+        self.clientsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.connected = False
 
-host = "10.250.150.39"
-port = 9999
-client.connect((host, port))
+    def connect(self, host="10.228.185.36", port=9999):
+        if not self.connected:
+            try:
+                self.clientsocket.connect((host, port))
+                self.connected = True
+            except:
+                pass
+        return self.connected
 
-name = input("Name: ")
+    def send_login(self, username, password):
 
+        # username = input("Username: ")
+        # password = input("Password: ")
 
-def send_info():
+        wp.send(self.clientsocket, wp.MSG_TYPES.LOGIN, username=username, password=password)
 
-    username = input("Username: ")
-    password = input("Password: ")
+    def send_register(self, username, password):
+        wp.send(self.clientsocket, wp.MSG_TYPES.REGISTER, username=username, password=password)
 
-    wp.send(client, wp.MSG_TYPES.LOGIN, username=username, password=password)
-    
-    # client.close()
-
-def receive_info():
-    while True:
-        message = client.recv(2048)
-        if message:
-            print(message.decode("ascii"))
-
-threading.Thread(target= send_info).start()
-threading.Thread(target= receive_info).start()
+    def receive_messages(self):
+        while True:
+            message = self.clientsocket.recv(2048)
+            if message:
+                print(message.decode("ascii"))

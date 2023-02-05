@@ -28,7 +28,6 @@ class RESPONSE_CODE():
     REGISTER_SUCCESS = 3
     REGISTER_INVALID_USERNAME = 4
     AUTH_ERROR = 5
-    
 
 # Define the maximum size for the payload
 MAX_PAYLOAD_SIZE = 1024
@@ -77,11 +76,6 @@ def send(socket, message_type, **kwargs):
     """
     message = pack_message(message_type, **kwargs)
     send_message(socket, message)
-
-
-
-
-
 
 
 

@@ -74,3 +74,5 @@ class Database:
 
             cursor.execute("DELETE FROM Users WHERE username = ?", (username,))
             self.conn.commit()
+
+            # TODO: need to delete messages addressed to that user as well upon deletion

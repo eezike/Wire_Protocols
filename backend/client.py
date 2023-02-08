@@ -4,9 +4,8 @@
 # Emeka: 10.250.150.39
 # Python program to implement client side of chat room.
 import socket
-import select
 import threading
-import wireprotocol as wp
+import backend.wireprotocol as wp
 
 class Client:
     def __init__(self):
@@ -17,23 +16,45 @@ class Client:
         if not self.connected:
             try:
                 self.clientsocket.connect((host, port))
-                self.connected = True
+                if self.receive_response() == wp.RESPONSE_CODE.WELCOME:
+                    self.connected = True
             except:
                 pass
+
         return self.connected
 
     def send_login(self, username, password):
-
-        # username = input("Username: ")
-        # password = input("Password: ")
-
-        wp.send(self.clientsocket, wp.MSG_TYPES.LOGIN, username=username, password=password)
+        wp.sendone(self.clientsocket, wp.MSG_TYPES.LOGIN, username = username, password = password)
+        return self.receive_response()
 
     def send_register(self, username, password):
-        wp.send(self.clientsocket, wp.MSG_TYPES.REGISTER, username=username, password=password)
+        wp.sendone(self.clientsocket, wp.MSG_TYPES.REGISTER, username = username, password = password)
+        return self.receive_response()
+    
+    def send_message(self, _to, _from, body):
+        wp.sendone(self.clientsocket, wp.MSG_TYPES.SEND_MSG, _from = _from, _to = _to, body = body)
+    
+    def get_users(self):
+        wp.sendone(self.clientsocket, wp.MSG_TYPES.RESPONSE, response_code = wp.RESPONSE_CODE.REQ_USERS)
+        return self.receive_response()
 
-    def receive_messages(self):
-        while True:
-            message = self.clientsocket.recv(2048)
-            if message:
-                print(message.decode("ascii"))
+    def receive_response(self):
+        try:
+            message_type, payload = wp.receive_message(self.clientsocket)
+            if message_type == wp.MSG_TYPES.RESPONSE:
+                response_code = wp.unpack_payload(message_type, payload)
+                return response_code
+            elif message_type == wp.MSG_TYPES.RES_USERS:
+                user = wp.unpack_payload(message_type, payload)
+                if user != "":
+                    return [user] + self.receive_response()
+                else:
+                    return []
+            else:
+                print("Error 1")
+            
+        except:
+            print("Error 2")
+            pass
+            
+        return wp.RESPONSE_CODE.UNKNOWN_ERROR

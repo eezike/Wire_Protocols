@@ -1,6 +1,5 @@
 import tkinter as tk
-import backend.database as database
-from frontend.loginpage import LoginPage
+from frontend.connectpage import ConnectPage
 from backend.client import Client 
 
 class Application(tk.Tk):
@@ -8,12 +7,11 @@ class Application(tk.Tk):
         tk.Tk.__init__(self)
         self._frame = None
         self.geometry("400x350")
-        self.switch_frame(LoginPage)
+        self.switch_frame(ConnectPage)
         self.title("Chatroom")
         self.geometry("850x300")
         # Use one instance of a database per application--put in master variable
-        self.db = database.Database()
-        self.client = client
+        self.client = client()
 
     def switch_frame(self, frame_class):
         new_frame = frame_class(self)
@@ -26,4 +24,4 @@ def run(client):
     app = Application(client)
     app.mainloop()
 
-run(Client())
+run(Client)

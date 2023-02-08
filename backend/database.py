@@ -1,10 +1,11 @@
 import sqlite3
 from contextlib import closing
+import wireprotocol as wp
 
 class Database:
 
     def __init__(self):
-        self.conn = sqlite3.connect("chatroom.db")
+        self.conn = sqlite3.connect("chatroom.db", check_same_thread=False)
 
         # Creates Users and Messages table if it does not exist
         with closing(self.conn.cursor()) as cursor:
@@ -13,37 +14,30 @@ class Database:
             
             self.conn.commit()
     
-    def register(self, username:str, password:str) -> str:
+    def register(self, username:str, password:str) -> None:
         with closing(self.conn.cursor()) as cursor:
             res = cursor.execute("SELECT username, password FROM Users WHERE username = ?", (username,)).fetchall()
+            
             if len(res) > 0:
-                print("Error: [register] account exists")
-                return
+                raise Exception("Error: [register] account exists", wp.RESPONSE_CODE.REGISTER_INVALID_USERNAME)
 
             cursor.execute("INSERT INTO Users (username, password) VALUES (?, ?)", (username, password))
             
             self.conn.commit()
-        
-        return username
 
-    def login(self, username: str, attempted_password: str) -> str:
+    def login(self, username: str, attempted_password: str) -> None:
         with closing(self.conn.cursor()) as cursor:
             res = cursor.execute("SELECT username, password FROM Users WHERE username = ?", (username,)).fetchall()
 
             if len(res) != 1:
-                print("Error: [login] Account does not exist")
-                return
+                raise Exception("Error: [login] Account does not exist", wp.RESPONSE_CODE.LOGIN_NO_ACCOUNT)
             
             _, password = res[0]
             
             if password != attempted_password:
-                print("Error: [login] Wrong password")
-                return
+                raise Exception("Error: [login] Wrong password", wp.RESPONSE_CODE.LOGIN_INVALID_PASSWORD)
             
-        return username
-
-        def logout():
-            return
+        
 
     def save_message(self, _to: str, _from: str, msg: str) -> None:
         with closing(self.conn.cursor()) as cursor:
@@ -63,14 +57,19 @@ class Database:
                 self.delete_message(msg_id)
             
             return [(_from, msg) for _, _from, msg in res]
+    
+    def get_users(self) -> list[str]:
+        with closing(self.conn.cursor()) as cursor:
+            res = cursor.execute("SELECT username FROM USERS").fetchall()
+
+            return [name for (name,) in res]
 
     def delete_user(self, username: str):
         with closing(self.conn.cursor()) as cursor:
 
             res = cursor.execute("SELECT username FROM Users WHERE username = ?", (username,)).fetchall()
             if len(res) == 0:
-                print("Error: [delete_user] account does not exist")
-                return
+                raise Exception("Error: [delete_user] account does not exist", wp.RESPONSE_CODE.UNKNOWN_ERROR)
 
             cursor.execute("DELETE FROM Users WHERE username = ?", (username,))
             self.conn.commit()

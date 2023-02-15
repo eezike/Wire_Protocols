@@ -55,7 +55,7 @@ def pack_message(message_type: int, **kwargs) -> bytes:
         b_msg = kwargs.get("msg", None).encode("ascii")
         payload = struct.pack(MSG_FORMAT.SEND_MSG, b_to, b_from, b_msg)
     elif message_type == MSG_TYPES.RES_MSGS:
-       payload = struct.pack(MSG_FORMAT.RES_MSGS, 1)
+        payload = struct.pack(MSG_FORMAT.RES_MSGS, 1)
     elif message_type == MSG_TYPES.RESPONSE:
         response_code = kwargs.get("response_code", None)
         payload = struct.pack(MSG_FORMAT.RESPONSE, response_code)

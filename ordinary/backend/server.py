@@ -66,6 +66,30 @@ class Server:
 		
 		message_type, payload = wp.receive_message(clientsocket)
 
+		if message_type == wp.MSG_TYPES.RESPONSE:
+			self.handle_response(clientsocket, payload)
+		elif message_type == wp.MSG_TYPES.SEND_MSG:
+			_to, _from, body = wp.unpack_payload(message_type, payload)
+
+			if _to in self.current_users:
+				wp.sendone(
+					socket = self.current_users[_to],
+					message_type = wp.MSG_TYPES.RES_MSGS,
+					_to = _to,
+					_from = _from,
+					body = body
+				)
+
+				wp.sendone(
+					socket = self.current_users[_to],
+					message_type = wp.MSG_TYPES.RES_MSGS,
+					_to = "",
+					_from = "",
+					body = ""
+				)
+			
+			
+	def handle_response(self, clientsocket, payload):
 		users = self.db.get_users()
 
 		for user in users:
@@ -78,8 +102,6 @@ class Server:
 			clientsocket, 
 			wp.MSG_TYPES.RES_USERS,
 			user = "")
-	
-
 				
 
 	def authenticate(self, clientsocket, addr) -> str:
@@ -111,15 +133,15 @@ class Server:
 				username, password = wp.unpack_payload(message_type, payload)
 				self.db.register(username, password)
 				wp.sendone(
-					socket = clientsocket, 
-					message_type = wp.MSG_TYPES.RESPONSE, 
+					socket = clientsocket,
+					message_type = wp.MSG_TYPES.RESPONSE,
 					response_code = wp.RESPONSE_CODE.REGISTER_SUCCESS)
 				self.current_users[username] = clientsocket
 				return username
 			except Exception as response_code:
 				wp.sendone(
 					socket = clientsocket,
-					message_type = wp.MSG_TYPES.RESPONSE, 
+					message_type = wp.MSG_TYPES.RESPONSE,
 					response_code = self.val_error_code(response_code))
 				return None
 		else:

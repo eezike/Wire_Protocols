@@ -11,6 +11,7 @@ class Client:
     def __init__(self):
         self.clientsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.connected = False
+        self.username = None
 
     def connect(self, host="10.228.185.36", port=9999):
         if not self.connected:
@@ -25,14 +26,17 @@ class Client:
 
     def send_login(self, username, password):
         wp.sendone(self.clientsocket, wp.MSG_TYPES.LOGIN, username = username, password = password)
+        self.username = username
         return self.receive_response()
 
     def send_register(self, username, password):
         wp.sendone(self.clientsocket, wp.MSG_TYPES.REGISTER, username = username, password = password)
+        self.username = username
         return self.receive_response()
     
-    def send_message(self, _to, _from, body):
-        wp.sendone(self.clientsocket, wp.MSG_TYPES.SEND_MSG, _from = _from, _to = _to, body = body)
+    def send_message(self, _to, body):
+        wp.sendone(self.clientsocket, wp.MSG_TYPES.SEND_MSG, _from = self.username, _to = _to, body = body)
+        return self.receive_response()
     
     def get_users(self):
         wp.sendone(self.clientsocket, wp.MSG_TYPES.RESPONSE, response_code = wp.RESPONSE_CODE.REQ_USERS)

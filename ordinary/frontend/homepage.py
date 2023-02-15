@@ -24,14 +24,13 @@ class HomePage(tk.Frame):
         send_button.grid(row=1, column=1, sticky="E", padx=10, pady=10)
     
     def send_message(self):
-        pass
-        # body = self.message_input.get("1.0", 'end-1c')
+        body = self.message_input.get("1.0", 'end-1c')
 
-        # self.master.client.send_message(self.recipient, _from, body)
+        self.master.client.send_message(self.recipient, body)
         
-        # self.add_message(self.recipient, "You", body)
+        self.add_message(self.recipient, "You", body)
         
-        # self.message_input.delete("1.0", tk.END)
+        self.message_input.delete("1.0", tk.END)
 
     def add_message(self, _to, _from, body):
         self.messages_list.insert("end", f"{_from} -> {_to}: {body}")

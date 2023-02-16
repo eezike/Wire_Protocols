@@ -2,8 +2,8 @@ import grpc
 from concurrent import futures
 import chat_service_pb2
 import chat_service_pb2_grpc
+from collections import defaultdict
 import pickle
-
 
 def storeData(db):
     with open('db.pkl', 'wb') as dbfile:
@@ -17,8 +17,7 @@ def loadData():
     except:
         db = {
             "passwords" : dict(),
-            "active_streams": dict(),
-            "messages": []
+            "messages": defaultdict(list)
         }
     
     return db
@@ -26,24 +25,15 @@ def loadData():
 db = loadData()
 
 
+
 class AuthServiceServicer(chat_service_pb2_grpc.AuthServiceServicer):
+
     def Login(self, request, context):
 
         username = request.username 
         password = request.password 
 
         if username in db["passwords"] and password == db["passwords"][username]:
-
-            # store newly logged in user's stream
-            stream = context.otherside_context().wrap(grpc.server_streaming).invoke_rpc()
-            db["active_streams"][username] = stream
-            storeData(db)
-
-            # send logged in user all their messages
-            for message in db["messages"]:
-                if message.recipient_username == username:
-                    stream.send_message(message)
-                    db["messages"].remove(message)
             
             response = chat_service_pb2.LoginResponse(success=True, message='Login successful')
         else:
@@ -58,41 +48,49 @@ class AuthServiceServicer(chat_service_pb2_grpc.AuthServiceServicer):
         password = request.password
 
         if username not in db["passwords"]:
-            
-            # add new user to active streams
-            stream = context.otherside_context().wrap(grpc.server_streaming).invoke_rpc()
-            db["active_streams"][username] = stream
 
             # register the user
             db["passwords"][username] = password
             storeData(db)
 
-            response = chat_service_pb2.LoginResponse(success=True, message='Register successful')
+            response = chat_service_pb2.RegisterResponse(success=True, message='Register successful')
         else:
-            response = chat_service_pb2.LoginResponse(success=False, message='This username is taken')
-
+            response = chat_service_pb2.RegisterResponse(success=False, message='This username is taken')
 
         return response
 
 class ChatServiceServicer(chat_service_pb2_grpc.ChatServiceServicer):
     def SendMessage(self, request, context):
 
-        sender_username = request.sender_username
-        recipient_username = request.recipient_username
+        sender = request.sender
+        recipient = request.recipient
         content = request.content
 
-        if sender_username not in db["passwords"]:
+        if sender not in db["passwords"]:
             # send an error later
             return chat_service_pb2.Empty()
 
-        print(f"Received message from {sender_username} to {recipient_username}: {content}")
+        print(f"Received message from {sender} to {recipient}: {content}")
+
+        db["messages"][recipient].append(request)
         
-        if recipient_username in db["active_streams"]:
-            db["active_streams"][recipient_username].send_message(request)
-        else:
-            db["messages"].append(request)
 
         return chat_service_pb2.Empty()
+
+    def GetUsers(self, request, context):
+        for user in db["passwords"]:
+            yield chat_service_pb2.User(username = user)
+    
+    def ReceiveMessage(self, request, context):
+        recipient = request.username 
+
+        for i in range(len(db["messages"][recipient]) - 1, - 1, -1):
+            message = db["messages"][recipient][i]
+            yield chat_service_pb2.ChatMessage(sender = message.sender, content = message.content)
+            db["messages"][recipient].pop()
+            storeData(db)
+        
+                    
 
 
 def serve():

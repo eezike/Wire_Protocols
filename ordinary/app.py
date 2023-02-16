@@ -6,7 +6,6 @@ class Application(tk.Tk):
     def __init__(self, client):
         tk.Tk.__init__(self)
         self._frame = None
-        self.geometry("400x350")
         self.switch_frame(ConnectPage)
         self.title("Chatroom")
         self.geometry("850x300")

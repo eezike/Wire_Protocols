@@ -6,26 +6,28 @@ package chat;
 
 service ChatService {
 
-  rpc JoinChat (JoinRequest) returns (stream ChatMessage) {}
-
   rpc SendMessage (SendRequest) returns (Empty) {}
-}
 
-message JoinRequest {
-  string username = 1;
+  rpc ReceiveMessage (User) returns (stream ChatMessage) {}
+
+  rpc GetUsers (Empty) returns (stream User) {}
 }
 
 message SendRequest {
-  string sender_username = 1;
-  string recipient_username = 2;
+  string sender = 1;
+  string recipient = 2;
   string content = 3;
 }
 
 message Empty {}
 
 message ChatMessage {
-  string sender_username = 1;
+  string sender = 1;
   string content = 2;
+}
+
+message User {
+  string username = 1;
 }
 
 // Auth Service

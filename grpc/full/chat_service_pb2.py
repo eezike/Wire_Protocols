@@ -13,31 +13,31 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x12\x63hat_service.proto\x12\x04\x63hat\"\x1f\n\x0bJoinRequest\x12\x10\n\x08username\x18\x01 \x01(\t\"S\n\x0bSendRequest\x12\x17\n\x0fsender_username\x18\x01 \x01(\t\x12\x1a\n\x12recipient_username\x18\x02 \x01(\t\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\"\x07\n\x05\x45mpty\"7\n\x0b\x43hatMessage\x12\x17\n\x0fsender_username\x18\x01 \x01(\t\x12\x0f\n\x07\x63ontent\x18\x02 \x01(\t\"2\n\x0cLoginRequest\x12\x10\n\x08username\x18\x01 \x01(\t\x12\x10\n\x08password\x18\x02 \x01(\t\"1\n\rLoginResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x0f\n\x07message\x18\x02 \x01(\t\"5\n\x0fRegisterRequest\x12\x10\n\x08username\x18\x01 \x01(\t\x12\x10\n\x08password\x18\x02 \x01(\t\"4\n\x10RegisterResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x0f\n\x07message\x18\x02 \x01(\t2t\n\x0b\x43hatService\x12\x34\n\x08JoinChat\x12\x11.chat.JoinRequest\x1a\x11.chat.ChatMessage\"\x00\x30\x01\x12/\n\x0bSendMessage\x12\x11.chat.SendRequest\x1a\x0b.chat.Empty\"\x00\x32~\n\x0b\x41uthService\x12\x32\n\x05Login\x12\x12.chat.LoginRequest\x1a\x13.chat.LoginResponse\"\x00\x12;\n\x08Register\x12\x15.chat.RegisterRequest\x1a\x16.chat.RegisterResponse\"\x00\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x12\x63hat_service.proto\x12\x04\x63hat\"A\n\x0bSendRequest\x12\x0e\n\x06sender\x18\x01 \x01(\t\x12\x11\n\trecipient\x18\x02 \x01(\t\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\"\x07\n\x05\x45mpty\".\n\x0b\x43hatMessage\x12\x0e\n\x06sender\x18\x01 \x01(\t\x12\x0f\n\x07\x63ontent\x18\x02 \x01(\t\"\x18\n\x04User\x12\x10\n\x08username\x18\x01 \x01(\t\"2\n\x0cLoginRequest\x12\x10\n\x08username\x18\x01 \x01(\t\x12\x10\n\x08password\x18\x02 \x01(\t\"1\n\rLoginResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x0f\n\x07message\x18\x02 \x01(\t\"5\n\x0fRegisterRequest\x12\x10\n\x08username\x18\x01 \x01(\t\x12\x10\n\x08password\x18\x02 \x01(\t\"4\n\x10RegisterResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x0f\n\x07message\x18\x02 \x01(\t2\x9c\x01\n\x0b\x43hatService\x12/\n\x0bSendMessage\x12\x11.chat.SendRequest\x1a\x0b.chat.Empty\"\x00\x12\x33\n\x0eReceiveMessage\x12\n.chat.User\x1a\x11.chat.ChatMessage\"\x00\x30\x01\x12\'\n\x08GetUsers\x12\x0b.chat.Empty\x1a\n.chat.User\"\x00\x30\x01\x32~\n\x0b\x41uthService\x12\x32\n\x05Login\x12\x12.chat.LoginRequest\x1a\x13.chat.LoginResponse\"\x00\x12;\n\x08Register\x12\x15.chat.RegisterRequest\x1a\x16.chat.RegisterResponse\"\x00\x62\x06proto3')
 
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'chat_service_pb2', globals())
 if _descriptor._USE_C_DESCRIPTORS == False:
 
   DESCRIPTOR._options = None
-  _JOINREQUEST._serialized_start=28
-  _JOINREQUEST._serialized_end=59
-  _SENDREQUEST._serialized_start=61
-  _SENDREQUEST._serialized_end=144
-  _EMPTY._serialized_start=146
-  _EMPTY._serialized_end=153
-  _CHATMESSAGE._serialized_start=155
-  _CHATMESSAGE._serialized_end=210
-  _LOGINREQUEST._serialized_start=212
-  _LOGINREQUEST._serialized_end=262
-  _LOGINRESPONSE._serialized_start=264
-  _LOGINRESPONSE._serialized_end=313
-  _REGISTERREQUEST._serialized_start=315
-  _REGISTERREQUEST._serialized_end=368
-  _REGISTERRESPONSE._serialized_start=370
-  _REGISTERRESPONSE._serialized_end=422
-  _CHATSERVICE._serialized_start=424
-  _CHATSERVICE._serialized_end=540
-  _AUTHSERVICE._serialized_start=542
-  _AUTHSERVICE._serialized_end=668
+  _SENDREQUEST._serialized_start=28
+  _SENDREQUEST._serialized_end=93
+  _EMPTY._serialized_start=95
+  _EMPTY._serialized_end=102
+  _CHATMESSAGE._serialized_start=104
+  _CHATMESSAGE._serialized_end=150
+  _USER._serialized_start=152
+  _USER._serialized_end=176
+  _LOGINREQUEST._serialized_start=178
+  _LOGINREQUEST._serialized_end=228
+  _LOGINRESPONSE._serialized_start=230
+  _LOGINRESPONSE._serialized_end=279
+  _REGISTERREQUEST._serialized_start=281
+  _REGISTERREQUEST._serialized_end=334
+  _REGISTERRESPONSE._serialized_start=336
+  _REGISTERRESPONSE._serialized_end=388
+  _CHATSERVICE._serialized_start=391
+  _CHATSERVICE._serialized_end=547
+  _AUTHSERVICE._serialized_start=549
+  _AUTHSERVICE._serialized_end=675
 # @@protoc_insertion_point(module_scope)

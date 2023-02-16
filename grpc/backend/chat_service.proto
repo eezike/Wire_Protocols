@@ -6,7 +6,7 @@ package chat;
 
 service ChatService {
 
-  rpc SendMessage (SendRequest) returns (Empty) {}
+  rpc SendMessage (SendRequest) returns (SendResponse) {}
 
   rpc ReceiveMessage (User) returns (stream ChatMessage) {}
 
@@ -17,6 +17,11 @@ message SendRequest {
   string sender = 1;
   string recipient = 2;
   string content = 3;
+}
+
+message SendResponse {
+  bool success = 1;
+  string message = 2;
 }
 
 message Empty {}

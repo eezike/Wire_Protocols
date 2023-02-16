@@ -7,7 +7,6 @@ channel = grpc.insecure_channel('localhost:50051')
 auth_stub = chat_service_pb2_grpc.AuthServiceStub(channel)
 chat_stub = chat_service_pb2_grpc.ChatServiceStub(channel)
 
-users = []
 username = ""
 
 def receive_messages():
@@ -17,7 +16,7 @@ def receive_messages():
         messageObjs = chat_stub.ReceiveMessage(chat_service_pb2.User(username = username))
         for messageObj in messageObjs:
             response = f"{messageObj.sender}: {messageObj.content}"
-            print(f"\n New Message:\n{response}\n")
+            print(f"\nNew Message:\n{response}\n")
 
 def send_messages():
     global username
@@ -43,9 +42,10 @@ def home():
         print(f"{messageObj.sender}: {messageObj.content}")
         no_messages = False
     if no_messages:
-        print("None")
+        print("Empty")
     
     # Get users
+    users = []
     userObjs = chat_stub.GetUsers(chat_service_pb2.Empty())
 
     for userObj in userObjs:

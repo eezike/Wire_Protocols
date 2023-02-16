@@ -66,16 +66,16 @@ class ChatServiceServicer(chat_service_pb2_grpc.ChatServiceServicer):
         recipient = request.recipient
         content = request.content
 
-        if sender not in db["passwords"]:
+        if sender not in db["passwords"] or recipient not in db["passwords"]:
             # send an error later
-            return chat_service_pb2.Empty()
+            return chat_service_pb2.SendResponse(success = False, message = "Invalid sender or recipient")
 
         print(f"Received message from {sender} to {recipient}: {content}")
 
         db["messages"][recipient].append(request)
         
 
-        return chat_service_pb2.Empty()
+        return chat_service_pb2.SendResponse(success = True, message = "Message sent")
 
     def GetUsers(self, request, context):
         for user in db["passwords"]:
@@ -84,7 +84,7 @@ class ChatServiceServicer(chat_service_pb2_grpc.ChatServiceServicer):
     def ReceiveMessage(self, request, context):
         recipient = request.username 
 
-        for i in range(len(db["messages"][recipient]) - 1, - 1, -1):
+        for i in range(len(db["messages"][recipient]) - 1, -1, -1):
             message = db["messages"][recipient][i]
             yield chat_service_pb2.ChatMessage(sender = message.sender, content = message.content)
             db["messages"][recipient].pop()

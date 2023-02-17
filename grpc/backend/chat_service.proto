@@ -4,12 +4,11 @@ syntax = "proto3";
 
 package chat;
 
+// Define Chat Service & Message Types
+
 service ChatService {
-
   rpc SendMessage (SendRequest) returns (SendResponse) {}
-
   rpc ReceiveMessage (User) returns (stream ChatMessage) {}
-
   rpc GetUsers (Empty) returns (stream User) {}
 }
 
@@ -35,7 +34,7 @@ message User {
   string username = 1;
 }
 
-// Auth Service
+// Define Auth Service & Messages
 
 service AuthService {
     rpc Login (LoginRequest) returns (LoginResponse) {}

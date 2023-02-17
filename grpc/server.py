@@ -1,65 +1,95 @@
 import grpc
 from concurrent import futures
-import chat_service_pb2
-import chat_service_pb2_grpc
+import backend.chat_service_pb2 as chat_service_pb2
+import backend.chat_service_pb2_grpc as chat_service_pb2_grpc
 from collections import defaultdict
 import pickle
 
 def storeData(db):
-    with open('db.pkl', 'wb') as dbfile:
+    """
+    It opens db.pkl file in write binary mode, and then dumps our db to the file.
+    """
+    with open('./backend/db.pkl', 'wb') as dbfile:
         pickle.dump(db, dbfile)
 
-  
 def loadData():
+    """
+    Load the dictionary from the db.pkl file if it exists, otherwise create it.
+
+    Return a dictionary with two keys, "passwords" and "messages".
+    """
     try:
-        with open('db.pkl', 'rb')  as dbfile:
+        with open('./backend/db.pkl', 'rb')  as dbfile:
             db = pickle.load(dbfile)
     except:
         db = {
             "passwords" : dict(),
             "messages": defaultdict(list)
         }
-    
     return db
 
 db = loadData()
 
-
-
 class AuthServiceServicer(chat_service_pb2_grpc.AuthServiceServicer):
+    """
+    Define a gRPC service implementation class that inherits our Auth service stub definition.
+
+    Implements Login() and Register() functions
+    """
 
     def Login(self, request, context):
-
+        """
+        Checks if a user can login based on request's credentials.
+         
+        Returns a success or error response.
+        """
+        # Get the username and password from the request message
         username = request.username 
         password = request.password 
 
+        # Check whether the username and password match a registered user in the database
         if username in db["passwords"] and password == db["passwords"][username]:
             
+            # Send response success
             response = chat_service_pb2.LoginResponse(success=True, message='Login successful')
         else:
+            # Send response error if incorrect credentials are provided
             response = chat_service_pb2.LoginResponse(success=False, message='Invalid username or password')
-
 
         return response
     
     def Register(self, request, context):
+        """
+        Registers a user into our database.
+         
+        Returns a success or error response.
+        """
 
+        # Get the username and password from the request message
         username = request.username
         password = request.password
 
+        # Check whether the username is already taken in the database
         if username not in db["passwords"]:
 
-            # register the user
+            # Add the username and password to the database and save the db
             db["passwords"][username] = password
             storeData(db)
 
+            # Send response success
             response = chat_service_pb2.RegisterResponse(success=True, message='Register successful')
         else:
+            # Send error response to prevent multiple users registering
             response = chat_service_pb2.RegisterResponse(success=False, message='This username is taken')
 
         return response
 
 class ChatServiceServicer(chat_service_pb2_grpc.ChatServiceServicer):
+    """
+    Define a gRPC service implementation class that inherits our chat service stub definition.
+
+    Implements SendMessage() and ReceiveMessage() and GetUser() functions.
+    """
     def SendMessage(self, request, context):
 
         sender = request.sender
@@ -90,9 +120,6 @@ class ChatServiceServicer(chat_service_pb2_grpc.ChatServiceServicer):
             db["messages"][recipient].pop()
             storeData(db)
         
-                    
-
-
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     chat_service_pb2_grpc.add_AuthServiceServicer_to_server(AuthServiceServicer(), server)

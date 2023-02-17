@@ -1,93 +1,111 @@
 import grpc
-import chat_service_pb2
-import chat_service_pb2_grpc
+import backend.chat_service_pb2 as chat_service_pb2
+import backend.chat_service_pb2_grpc as chat_service_pb2_grpc
 import threading
 
-channel = grpc.insecure_channel('localhost:50051')
-auth_stub = chat_service_pb2_grpc.AuthServiceStub(channel)
-chat_stub = chat_service_pb2_grpc.ChatServiceStub(channel)
+class Client:
+    def __init__(self):
+        # # Creating a channel to the server
+        # self.channel = grpc.insecure_channel(IP + ':' + PORT) 
 
-username = ""
+        # # Retrieve the auth and chat stubs in the server channel
+        # self.auth_stub = chat_service_pb2_grpc.AuthServiceStub(self.channel)
+        # self.chat_stub = chat_service_pb2_grpc.ChatServiceStub(self.channel)
+        self.channel = self.auth_stub = self.chat_stub = None
+        self.connected = False
 
-def receive_messages():
-    global username
+        # Store logged in user
+        self.username = ""
 
-    while True:
-        messageObjs = chat_stub.ReceiveMessage(chat_service_pb2.User(username = username))
-        for messageObj in messageObjs:
-            response = f"{messageObj.sender}: {messageObj.content}"
-            print(f"\nNew Message:\n{response}\n")
+    def connect(self, host="10.228.185.36", port=50051):
+        if not self.connected:
+            try:
+                self.channel = grpc.insecure_channel(host + ':' + str(port)) 
+                self.auth_stub = chat_service_pb2_grpc.AuthServiceStub(self.channel)
+                self.chat_stub = chat_service_pb2_grpc.ChatServiceStub(self.channel)
+                self.connected = True
+            except:
+                pass
 
-def send_messages():
-    global username
+        return self.connected
 
-    while True:
-        print("\nMessaging")
-        recipient = input("Recipient: ")
-        content = input("Content: ")
-
-        request = chat_service_pb2.SendRequest(sender = username, recipient = recipient, content = content)
-        chat_stub.SendMessage(request)
-
-
-def home():
-    global username
-    
-    print("\nHome")
-
-    print("\nInbox:")
-    messageObjs = chat_stub.ReceiveMessage(chat_service_pb2.User(username = username))
-    no_messages = True
-    for messageObj in messageObjs:
-        print(f"{messageObj.sender}: {messageObj.content}")
-        no_messages = False
-    if no_messages:
-        print("Empty")
-    
-    # Get users
-    users = []
-    userObjs = chat_stub.GetUsers(chat_service_pb2.Empty())
-
-    for userObj in userObjs:
-        users.append(userObj.username)
-
-    print("\nUsers: ", users)
-
-    threading.Thread(target = send_messages).start()
-    threading.Thread(target = receive_messages).start()
-    
-
-
-def login():
-    global username
-    while True:
-
-        choice = input("\nRegister or Login: ")
+    def receive_messages(self):
+        """
+        Receives messages indefinitely from chat_stub. (run within thread)
+        """
         
-        if "r" in choice.lower() :
-            print("\nRegister")
-            username = input("Username: ")
-            password = input("Password: ")
-            request = chat_service_pb2.RegisterRequest(username=username, password=password)
-            response = auth_stub.Register(request)
+        # Retrieve messages from the server/stub associated with our current user
+        messageObjs = self.chat_stub.ReceiveMessage(chat_service_pb2.User(username = self.username))
+        return messageObjs
 
-            if response.success:
-                print(response.message)
-                break
-            else:
-                print(response.message)
-        else:
-            print("\nLogin")
-            username = input("Username: ")
-            password = input("Password: ")
-            request = chat_service_pb2.LoginRequest(username=username, password=password)
-            response = auth_stub.Login(request)
 
-            if response.success:
-                print(response.message)
-                break
-            else:
-                print(response.message)
+    def send_message(self, recipient, content):
+        """
+        Requests input indefinitely in order to send messages. (run within thread)
+        """
 
-login()
-home()
+
+        # Create a message request
+        print(self.username, recipient, content)
+        request = chat_service_pb2.SendRequest(sender = self.username, recipient = recipient, content = content)
+            
+        # Send message to the server via stub
+        self.chat_stub.SendMessage(request)
+
+    def get_users(self):
+        users = []
+        userObjs = self.chat_stub.GetUsers(chat_service_pb2.Empty())
+
+        for userObj in userObjs:
+            users.append(userObj.username)
+        
+        return users
+
+    def home():
+        """
+        Chat application's home page (post-login)
+        """
+        global username
+        
+        print("\nHome")
+
+        print("\nInbox:")
+        messageObjs = chat_stub.ReceiveMessage(chat_service_pb2.User(username = username))
+        no_messages = True
+        for messageObj in messageObjs:
+            print(f"{messageObj.sender}: {messageObj.content}")
+            no_messages = False
+        if no_messages:
+            print("Empty")
+        
+        # Get users
+        users = []
+        userObjs = chat_stub.GetUsers(chat_service_pb2.Empty())
+
+        for userObj in userObjs:
+            users.append(userObj.username)
+
+        print("\nUsers: ", users)
+
+        # Simultaneously send and receive in separate threads
+        threading.Thread(target = self.send_messages).start()
+        threading.Thread(target = self.receive_messages).start()
+        
+
+    def login(self, username, password):
+        request = chat_service_pb2.LoginRequest(username=username, password=password)
+        response = self.auth_stub.Login(request)
+
+        if response.success:
+            self.username = username
+
+        return response
+    
+    def register(self, username, password):
+        request = chat_service_pb2.RegisterRequest(username=username, password=password)
+        response = self.auth_stub.Register(request)
+
+        if response.success:
+            self.username = username
+
+        return response

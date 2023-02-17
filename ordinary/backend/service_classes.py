@@ -5,14 +5,21 @@ VERSION = 2
 HEADER_FORMAT = "!iii"
 
 class MESSAGE_TYPES():
-    SendRequest = 1
+    SendMessageRequest = 1
     Response = 2
-    Empty = 3
-    ChatMessage = 4
-    User = 5
+    GetUsersRequest = 3
+    UsersStreamResponse = 4
+    MessagesStreamResponse = 5
     LoginRequest = 6
     RegisterRequest = 7
-    StreamEnd = 8
+    DeleteUserRequest = 8
+    StreamEnd = 9
+    Empty = 10
+    GetMessagesRequest = 11
+    SingleMessageResponse = 12
+
+
+
 
 class Message:
     def __init__(self):
@@ -26,10 +33,10 @@ class Message:
         pass
 
 
-class SendRequest(Message):
+class SendMessageRequest(Message):
     def __init__(self, sender = None, recipient = None, content = None):
         self.FORMAT = "!20s20s256s"
-        self.TYPE = MESSAGE_TYPES.SendRequest
+        self.TYPE = MESSAGE_TYPES.SendMessageRequest
         self.sender = sender
         self.recipient = recipient
         self.content = content
@@ -65,23 +72,42 @@ class Response(Message):
     def unpack(self, binary):
         pass
 
+class GetUsersRequest(Message):
+    def __init__(self, username = None):
+        self.FORMAT = "!20s"
+        self.TYPE = MESSAGE_TYPES.GetUsersRequest
+        self.username = username
 
-class Empty(Message):
-    def __init__(self):
-        self.FORMAT = ""
-        self.TYPE = MESSAGE_TYPES
-        pass
-    
     def pack(self) -> bytes:
-        pass
-    
+        b_username = self.username.encode("ascii")
+        payload = struct.pack(self.FORMAT, b_username)
+
+        header = struct.pack(HEADER_FORMAT, VERSION, self.TYPE, len(payload))
+        return header + payload
+
     def unpack(self, binary):
         pass
 
-class ChatMessage(Message):
+class UsersStreamResponse(Message):
+    def __init__(self, username = None):
+        self.FORMAT = "!20s"
+        self.TYPE = MESSAGE_TYPES.UsersStreamResponse
+        self.username = username
+
+    def pack(self) -> bytes:
+        b_username = self.username.encode("ascii")
+        payload = struct.pack(self.FORMAT, b_username)
+
+        header = struct.pack(HEADER_FORMAT, VERSION, self.TYPE, len(payload))
+        return header + payload
+
+    def unpack(self, binary):
+        pass
+
+class MessagesStreamResponse(Message):
     def __init__(self, sender = None, content = None):
         self.FORMAT = "!20s256s"
-        self.TYPE = MESSAGE_TYPES
+        self.TYPE = MESSAGE_TYPES.MessagesStreamResponse
         self.sender = sender
         self.content = content
 
@@ -96,27 +122,10 @@ class ChatMessage(Message):
     def unpack(self, binary):
         pass
 
-class User(Message):
-    def __init__(self, username = None):
-        self.FORMAT = "!20s"
-        self.TYPE = MESSAGE_TYPES
-        self.username = username
-
-    def pack(self) -> bytes:
-        b_username = self.username.encode("ascii")
-        payload = struct.pack(self.FORMAT, b_username)
-
-        header = struct.pack(HEADER_FORMAT, VERSION, self.TYPE, len(payload))
-        return header + payload
-
-    def unpack(self, binary):
-        pass
-
-
 class LoginRequest(Message):
     def __init__(self, username = None, password = None):
         self.FORMAT = "!20s20s"
-        self.TYPE = MESSAGE_TYPES
+        self.TYPE = MESSAGE_TYPES.LoginRequest
         self.username = username
         self.password = password
 
@@ -135,7 +144,7 @@ class LoginRequest(Message):
 class RegisterRequest(Message):
     def __init__(self, username = None, password = None):
         self.FORMAT = "!20s20s"
-        self.TYPE = MESSAGE_TYPES
+        self.TYPE = MESSAGE_TYPES.RegisterRequest
         self.username = username
         self.password = password
 
@@ -150,16 +159,77 @@ class RegisterRequest(Message):
     def unpack(self, binary):
         pass
 
+class DeleteUserRequest(Message):
+    def __init__(self, username = None):
+        self.FORMAT = "!20s"
+        self.TYPE = MESSAGE_TYPES.DeleteUserRequest
+        self.username = username
+
+    def pack(self) -> bytes:
+        b_username = self.username.encode("ascii")
+        payload = struct.pack(self.FORMAT, b_username)
+
+        header = struct.pack(HEADER_FORMAT, VERSION, self.TYPE, len(payload))
+        return header + payload
+
+    def unpack(self, binary):
+        pass
+
 
 class StreamEnd(Message):
     def __init__(self):
         self.FORMAT = "!i"
         self.TYPE = MESSAGE_TYPES.StreamEnd
-        pass
     
     def pack(self) -> bytes:
         header = struct.pack(HEADER_FORMAT, VERSION, self.TYPE, 0)
         return header
+    
+    def unpack(self, binary):
+        pass
+
+class Empty(Message):
+    def __init__(self):
+        self.FORMAT = ""
+        self.TYPE = MESSAGE_TYPES.Empty
+    
+    def pack(self) -> bytes:
+        header = struct.pack(HEADER_FORMAT, VERSION, self.TYPE, 0)
+        return header
+    
+    def unpack(self, binary):
+        pass
+
+class GetMessagesRequest(Message):
+    def __init__(self, username = None):
+        self.FORMAT = "!20s"
+        self.TYPE = MESSAGE_TYPES.GetMessagesRequest
+        self.username = username
+
+    def pack(self) -> bytes:
+        b_username = self.username.encode("ascii")
+        payload = struct.pack(self.FORMAT, b_username)
+
+        header = struct.pack(HEADER_FORMAT, VERSION, self.TYPE, len(payload))
+        return header + payload
+
+    def unpack(self, binary):
+        pass
+
+class SingleMessageResponse(Message):
+    def __init__(self, sender = None, content = None):
+        self.FORMAT = "!20s256s"
+        self.TYPE = MESSAGE_TYPES.MessagesStreamResponse
+        self.sender = sender
+        self.content = content
+
+    def pack(self) -> bytes:
+        b_sender = self.sender.encode("ascii")
+        b_content = self.content.encode("ascii")
+        payload = struct.pack(self.FORMAT, b_sender, b_content)
+
+        header = struct.pack(HEADER_FORMAT, VERSION, self.TYPE, len(payload))
+        return header + payload
     
     def unpack(self, binary):
         pass

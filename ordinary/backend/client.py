@@ -4,61 +4,68 @@
 # Emeka: 10.250.150.39
 # Python program to implement client side of chat room.
 import socket
-import threading
-import backend.wireprotocol as wp
+from service_classes import VERSION, HEADER_FORMAT, MESSAGE_TYPES, Message, SendMessageRequest, Response, GetUsersRequest, UsersStreamResponse, MessagesStreamResponse, LoginRequest, RegisterRequest, DeleteUserRequest, StreamEnd, Empty, GetMessagesRequest, SingleMessageResponse
+from service import Stub
+
 
 class Client:
     def __init__(self):
         self.clientsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.connected = False
         self.username = None
+        self.stub = Stub(self.clientsocket, client = True)
 
     def connect(self, host="10.228.185.36", port=9999):
         if not self.connected:
             try:
                 self.clientsocket.connect((host, port))
-                if self.receive_response() == wp.RESPONSE_CODE.WELCOME:
+                response = self.stub.Send(Empty())
+                if response.success:
                     self.connected = True
             except:
                 pass
 
         return self.connected
 
-    def send_login(self, username, password):
-        wp.sendone(self.clientsocket, wp.MSG_TYPES.LOGIN, username = username, password = password)
+    def Login(self, username, password) -> Response:
+        request = LoginRequest(username= username, password= password)
+        response = self.stub.Send(request)
         self.username = username
-        return self.receive_response()
+        return response
 
-    def send_register(self, username, password):
-        wp.sendone(self.clientsocket, wp.MSG_TYPES.REGISTER, username = username, password = password)
+    def Register(self, username, password) -> Response:
+        request = RegisterRequest(username= username, password= password)
+        response = self.stub.Send(request)
         self.username = username
-        return self.receive_response()
+        return response
     
-    def send_message(self, _to, body):
-        wp.sendone(self.clientsocket, wp.MSG_TYPES.SEND_MSG, _from = self.username, _to = _to, body = body)
-        return self.receive_response()
+    def SendMessage(self, recipient, content) -> Response:
+        request = SendMessageRequest(sender= self.username, recipient= recipient, content= content)
+        response = self.stub.Send(request)
+        return response
     
-    def get_users(self):
-        wp.sendone(self.clientsocket, wp.MSG_TYPES.RESPONSE, response_code = wp.RESPONSE_CODE.REQ_USERS)
-        return self.receive_response()
+    def GetUsers(self) -> list[UsersStreamResponse]:
+        request = GetUsersRequest(username = self.username)
+        response = self.stub.Send(request)
+        return response
+    
+    def GetMessages(self) -> list[MessagesStreamResponse]:
+        request = GetMessagesRequest(username = self.username)
+        response = self.stub.Send(request)
+        return response
+    
+    def DeleteAccount(self) -> Response:
+        request = DeleteUserRequest(username = self.username)
+        response = self.stub.Send(request)
+        return response
+    
+    def ListenForMessages(self, callback):
+        while True:
+            message_type, payload = self.stub.Recv()
 
-    def receive_response(self):
-        try:
-            message_type, payload = wp.receive_message(self.clientsocket)
-            if message_type == wp.MSG_TYPES.RESPONSE:
-                response_code = wp.unpack_payload(message_type, payload)
-                return response_code
-            elif message_type == wp.MSG_TYPES.RES_USERS:
-                user = wp.unpack_payload(message_type, payload)
-                if user != "":
-                    return [user] + self.receive_response()
-                else:
-                    return []
-            else:
-                print("Error 1")
-            
-        except:
-            print("Error 2")
-            pass
-            
-        return wp.RESPONSE_CODE.UNKNOWN_ERROR
+            if message_type == MESSAGE_TYPES.SingleMessageResponse:
+                chat_message = self.stub.Parse(message_type, payload)
+                callback(chat_message)
+
+
+        

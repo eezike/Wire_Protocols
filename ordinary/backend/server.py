@@ -2,11 +2,13 @@
 import socket
 import threading
 import database
-import wireprotocol as wp
+from service_classes import VERSION, HEADER_FORMAT, MESSAGE_TYPES, Message, SendMessageRequest, Response, GetUsersRequest, UsersStreamResponse, MessagesStreamResponse, LoginRequest, RegisterRequest, DeleteUserRequest, StreamEnd, Empty, GetMessagesRequest, SingleMessageResponse
+from service import Stub
+from collections import defaultdict
 
 class Server:
 
-	def __init__(self, port = 9999, max_clients = 10):
+	def __init__(self, port : int = 9999, max_clients : int = 10):
 		self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		# self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
@@ -24,7 +26,7 @@ class Server:
 
 		self.current_sockets = dict()
 
-		self.current_users = dict()
+		self.authenticated_users = defaultdict()
 
 		# The max amount of users the server will accept
 		self.MAX_CLIENTS = max_clients
@@ -42,25 +44,23 @@ class Server:
 		self.server.listen(self.MAX_CLIENTS)
 		print(f"Listening on port {self.PORT}")
 
-		while 1:
+		while True:
 			# Accepts a client socket request
 			clientsocket, addr = self.server.accept()
 			self.current_sockets[addr] = clientsocket
 			print(addr[0] + " has joined")
 			threading.Thread(target = self.handle_client, args = (clientsocket, addr)).start()
 
-	def handle_client(self, clientsocket, addr):
+	def handle_client(self, clientsocket: socket, addr : int):
 
+		stub = Stub(clientsocket)
 		# sends a message to the client whose user object is clientsocket
-		wp.sendone(
-			socket = clientsocket,
-			message_type = wp.MSG_TYPES.RESPONSE,
-			response_code = wp.RESPONSE_CODE.WELCOME
-		)
+		response = Response(success=True, message= "Welcome to the chat service!")
+		stub.Send(response)
 
 		# loop until authenticated
 		while True:
-			username = self.authenticate(clientsocket, addr)
+			username = self.authenticate(clientsocket, stub)
 			if username:
 				break
 		
@@ -89,7 +89,7 @@ class Server:
 				)
 			
 			
-	def handle_response(self, clientsocket, payload):
+	def handle_response(self, clientsocket : socket, payload : bytes):
 		users = self.db.get_users()
 
 		for user in users:
@@ -104,21 +104,20 @@ class Server:
 			user = "")
 				
 
-	def authenticate(self, clientsocket, addr) -> str:
+	def authenticate(self, clientsocket: socket, stub: Stub) -> str:
 		"""
 		Authenticates a user via login/register. Returns True if authenticated properly.		
 		"""
-		message_type, payload = wp.receive_message(clientsocket)
 
-		if message_type == wp.MSG_TYPES.LOGIN:
+		message_type, payload = stub.Recv()
+
+		if message_type == MESSAGE_TYPES.LoginRequest:
 			try:
-				username, password = wp.unpack_payload(message_type, payload)
+				loginreq = stub.Parse(message_type, payload)
 				self.db.login(username, password)
-				wp.sendone(
-					socket = clientsocket, 
-					message_type = wp.MSG_TYPES.RESPONSE, 
-					response_code = wp.RESPONSE_CODE.LOGIN_SUCCESS)
-				self.current_users[username] = clientsocket
+				response = Response(success=True, message= "Welcome to the chat service!")
+				stub.Send(response)
+				self.authenticated_users[username].append(clientsocket)
 				return username
 			except Exception as e:
 				wp.sendone(
@@ -128,7 +127,7 @@ class Server:
 				return None
 
 
-		elif message_type == wp.MSG_TYPES.REGISTER:	
+		elif message_type == MESSAGE_TYPES.RegisterRequest:	
 			try:
 				username, password = wp.unpack_payload(message_type, payload)
 				self.db.register(username, password)

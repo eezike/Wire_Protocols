@@ -19,7 +19,7 @@ class Database:
             res = cursor.execute("SELECT username, password FROM Users WHERE username = ?", (username,)).fetchall()
             
             if len(res) > 0:
-                raise Exception("Error: [register] account exists", wp.RESPONSE_CODE.REGISTER_INVALID_USERNAME)
+                raise Exception("Username already exists", wp.RESPONSE_CODE.REGISTER_INVALID_USERNAME)
 
             cursor.execute("INSERT INTO Users (username, password) VALUES (?, ?)", (username, password))
             
@@ -30,12 +30,12 @@ class Database:
             res = cursor.execute("SELECT username, password FROM Users WHERE username = ?", (username,)).fetchall()
 
             if len(res) != 1:
-                raise Exception("Error: [login] Account does not exist", wp.RESPONSE_CODE.LOGIN_NO_ACCOUNT)
+                raise Exception("Account does not exist", wp.RESPONSE_CODE.LOGIN_NO_ACCOUNT)
             
             _, password = res[0]
             
             if password != attempted_password:
-                raise Exception("Error: [login] Wrong password", wp.RESPONSE_CODE.LOGIN_INVALID_PASSWORD)
+                raise Exception("Wrong password", wp.RESPONSE_CODE.LOGIN_INVALID_PASSWORD)
             
         
 
@@ -69,7 +69,7 @@ class Database:
 
             res = cursor.execute("SELECT username FROM Users WHERE username = ?", (username,)).fetchall()
             if len(res) == 0:
-                raise Exception("Error: [delete_user] account does not exist", wp.RESPONSE_CODE.UNKNOWN_ERROR)
+                raise Exception("Account does not exist", wp.RESPONSE_CODE.UNKNOWN_ERROR)
 
             cursor.execute("DELETE FROM Users WHERE username = ?", (username,))
             self.conn.commit()

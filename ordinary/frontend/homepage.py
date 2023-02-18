@@ -14,8 +14,10 @@ class HomePage(tk.Frame):
 
         self.recipient = tk.StringVar()
 
+        
         self.options = self.master.client.get_users()
-        self.dropdown = tk.OptionMenu(self, self.recipient, *self.options, command=self.recipient_selected)
+        self.options = self.options if self.options else [" "]
+        self.dropdown = tk.OptionMenu(self, self.recipient, *self.options)
         self.dropdown.grid(row=0, column=1, padx=10, pady=10)
 
         self.message_input = tk.Text(self, height=3, width=30)
@@ -33,29 +35,24 @@ class HomePage(tk.Frame):
 
         self.master.client.send_message(self.recipient.get(), content)
         
-        self.add_message("You", content)
+        self.add_message(self.recipient.get(), content)
         
         self.message_input.delete("1.0", tk.END)
 
-    def add_message(self, other, content, reciever = False):
-        if reciever:
+    def add_message(self, other, content, receiver = False):
+        if receiver:
             self.messages_list.insert("end", f"{other}: {content}")
         else:
             self.messages_list.insert("end", f"You -> {other}: {content}")
         
     def get_inbox(self):
-        inbox : list[MessagesStreamResponse]  = self.master.client.get_messages()
+        inbox : list[MessagesStreamResponse] = self.master.client.get_messages()
         for message in inbox:
             self.add_message(message.sender, message.content)
 
         if len(inbox) == 0:
-            self.messages_list.insert("end", "NO NEW MESSAGES", reciever = True)
+            self.messages_list.insert("end", "NO NEW MESSAGES")
         
-
-    def recipient_selected(self, *args):
-        pass
-        # selected_option = self.recipient.get()
-        # print(f"Recepient: {selected_option}")
     
     def listen(self):
         def callback(message: SingleMessageResponse):

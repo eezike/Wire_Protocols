@@ -210,7 +210,7 @@ class StreamEnd(Message):
         return header
     
     def unpack(self, binary):
-        _ = struct.unpack(self.FORMAT, binary)
+        # _ = struct.unpack(self.FORMAT, binary)
         return []
 
 class Empty(Message):

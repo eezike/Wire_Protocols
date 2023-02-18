@@ -49,7 +49,6 @@ class Client:
     def get_users(self) -> list[UsersStreamResponse]:
         request = GetUsersRequest(username = self.username)
         response : list[UsersStreamResponse] = self.stub.Send(request)
-        print(response)
         return [user.username for user in response]
     
     def get_messages(self) -> list[MessagesStreamResponse]:

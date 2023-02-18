@@ -98,10 +98,10 @@ class Server:
 				loginreq : LoginRequest = stub.Parse(message_type, payload)
 				self.db.login(loginreq.username, loginreq.password)
 
+				self.authenticated_users[loginreq.username].append(clientsocket)
+
 				response = Response(success=True, message= "Login Successful")
 				stub.Send(response)
-
-				self.authenticated_users[loginreq.username].append(clientsocket)
 
 				return loginreq.username
 			except Exception as e:
@@ -116,14 +116,14 @@ class Server:
 			try:
 				registerreq : RegisterRequest = stub.Parse(message_type, payload)
 				self.db.register(registerreq.username, registerreq.password)
-
-				response = Response(success=True, message= "Registration Successful")
-				stub.Send(response)
 				
 				self.authenticated_users[registerreq.username].append(clientsocket)
 
-				return loginreq.username
-			except Exception as response_code:
+				response = Response(success=True, message= "Registration Successful")
+				stub.Send(response)
+
+				return registerreq.username
+			except Exception as e:
 				response = Response(success=False, message= str(e))
 				stub.Send(response)
 
@@ -199,6 +199,7 @@ class Server:
 		for sender, content in messages:
 			response.append(MessagesStreamResponse(sender=sender, content=content))
 		
+		print(response)
 		stub.SendStream(response)
 
 

@@ -11,7 +11,7 @@ class Application(tk.Tk):
         self.switch_frame(ConnectPage)
         self.title("Chatroom")
         self.geometry("850x300")
-        self.client = Client()
+        self.client = Client() 
 
     def switch_frame(self, frame_class):
         new_frame = frame_class(self)

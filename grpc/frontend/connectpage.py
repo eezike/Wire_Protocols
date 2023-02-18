@@ -25,12 +25,15 @@ class ConnectPage(tk.Frame):
         self.port_entry = tk.Entry(self, font=("TkDefaultFont", 14))
         self.port_entry.grid(row=1, column=1, padx=10, pady=10)
         
-        # Create connect button
+        # Create connect button and link to connect()
         self.connect_button = tk.Button(self, text="Connect", font=("TkDefaultFont", 14), command=self.connect)
         self.connect_button.grid(row=2, column=0, pady=10, padx=10, sticky="W")
 
 
     def connect(self):
+        """
+        Retreives host and port from frame and tries to connect server to server.
+        """
         host = self.host_entry.get()
         port = self.port_entry.get()
 
@@ -40,6 +43,7 @@ class ConnectPage(tk.Frame):
             messagebox.showerror("Input Error", "Port must be an integer")
             return
 
+        # Switch to login frame upon successful connect
         if self.master.client.connect(host, port):
             self.master.switch_frame(LoginPage)
         else:

@@ -8,6 +8,7 @@ class LoginPage(tk.Frame):
 
         self.master = master
 
+        # Check if client is conne
         if self.master.client.connected == False:
             messagebox.showerror("Error", "Not connected")
             return

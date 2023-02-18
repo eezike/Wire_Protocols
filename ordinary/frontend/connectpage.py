@@ -16,6 +16,7 @@ class ConnectPage(tk.Frame):
         self.host_entry = tk.Entry(self, font=("TkDefaultFont", 14))
         self.host_entry.grid(row=0, column=1, padx=10, pady=10)
         self.host_entry.focus_set()
+        self.host_entry.insert(0, '10.250.74.51')
 
         # Create label for port
         self.port_label = tk.Label(self, text="Port:", font=("TkDefaultFont", 16))
@@ -24,6 +25,7 @@ class ConnectPage(tk.Frame):
         # Create entry for port
         self.port_entry = tk.Entry(self, font=("TkDefaultFont", 14))
         self.port_entry.grid(row=1, column=1, padx=10, pady=10)
+        self.port_entry.insert(0, '9999')
         
         # Create connect button
         self.connect_button = tk.Button(self, text="Connect", font=("TkDefaultFont", 14), command=self.connect)

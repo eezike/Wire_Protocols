@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import messagebox
-from backend.service_classes import UsersStreamResponse, MessagesStreamResponse, SingleMessageResponse
+from backend.service_classes import MessagesStreamResponse, SingleMessageResponse
 import threading
 
 class HomePage(tk.Frame):

@@ -78,6 +78,8 @@ class Stub:
     
     def Parse(self, message_type: int, payload: bytes) -> tuple[int, any]:
 
+        print(45412, payload)
+
         if message_type in self.single_message_types_to_class:
             res = self.single_message_types_to_class[message_type]().unpack(payload)
         elif message_type in self.stream_message_types_to_class:

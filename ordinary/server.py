@@ -46,6 +46,7 @@ class Server:
 
 	def handle_client(self, clientsocket: socket, addr : int) -> None:
 		try:
+			username = None
 			message_type_to_function = {
 				MESSAGE_TYPES.SendMessageRequest : self.send_message,
 				# MESSAGE_TYPES.Response : 0,

@@ -9,8 +9,7 @@ class Application(tk.Tk):
         self.switch_frame(ConnectPage)
         self.title("Chatroom")
         self.geometry("850x300")
-        # Use one instance of a database per application--put in master variable
-        self.client = Client()
+        self.client : Client = Client()
 
     def switch_frame(self, frame_class):
         new_frame = frame_class(self)

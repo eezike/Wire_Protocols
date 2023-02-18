@@ -4,8 +4,8 @@
 # Emeka: 10.250.150.39
 # Python program to implement client side of chat room.
 import socket
-from service_classes import VERSION, HEADER_FORMAT, MESSAGE_TYPES, Message, SendMessageRequest, Response, GetUsersRequest, UsersStreamResponse, MessagesStreamResponse, LoginRequest, RegisterRequest, DeleteUserRequest, StreamEnd, Empty, GetMessagesRequest, SingleMessageResponse
-from service import Stub
+from backend.service_classes import VERSION, HEADER_FORMAT, MESSAGE_TYPES, Message, SendMessageRequest, Response, GetUsersRequest, UsersStreamResponse, MessagesStreamResponse, LoginRequest, RegisterRequest, DeleteUserRequest, StreamEnd, Empty, GetMessagesRequest, SingleMessageResponse
+from backend.service import Stub
 
 
 class Client:
@@ -19,7 +19,9 @@ class Client:
         if not self.connected:
             try:
                 self.clientsocket.connect((host, port))
-                response = self.stub.Send(Empty())
+                message_type, payload = self.stub.Recv()
+                response : Response = self.stub.Parse(message_type, payload)
+
                 if response.success:
                     self.connected = True
             except:
@@ -27,45 +29,47 @@ class Client:
 
         return self.connected
 
-    def Login(self, username, password) -> Response:
+    def login(self, username, password) -> Response:
         request = LoginRequest(username= username, password= password)
-        response = self.stub.Send(request)
+        response : Response = self.stub.Send(request)
         self.username = username
         return response
 
-    def Register(self, username, password) -> Response:
+    def register(self, username, password) -> Response:
         request = RegisterRequest(username= username, password= password)
-        response = self.stub.Send(request)
+        response : Response = self.stub.Send(request)
         self.username = username
         return response
     
-    def SendMessage(self, recipient, content) -> Response:
+    def send_message(self, recipient, content) -> Response:
         request = SendMessageRequest(sender= self.username, recipient= recipient, content= content)
-        response = self.stub.Send(request)
+        response : Response = self.stub.Send(request)
         return response
     
-    def GetUsers(self) -> list[UsersStreamResponse]:
+    def get_users(self) -> list[UsersStreamResponse]:
         request = GetUsersRequest(username = self.username)
-        response = self.stub.Send(request)
-        return response
+        response : list[UsersStreamResponse] = self.stub.Send(request)
+        print(response)
+        return [user.username for user in response]
     
-    def GetMessages(self) -> list[MessagesStreamResponse]:
+    def get_messages(self) -> list[MessagesStreamResponse]:
         request = GetMessagesRequest(username = self.username)
-        response = self.stub.Send(request)
+        response : list[MessagesStreamResponse] = self.stub.Send(request)
         return response
     
-    def DeleteAccount(self) -> Response:
+    def delete_account(self) -> Response:
         request = DeleteUserRequest(username = self.username)
-        response = self.stub.Send(request)
+        response : Response = self.stub.Send(request)
         return response
     
-    def ListenForMessages(self, callback):
+    def listen_for_updates(self, callback):
         while True:
             message_type, payload = self.stub.Recv()
 
             if message_type == MESSAGE_TYPES.SingleMessageResponse:
-                chat_message = self.stub.Parse(message_type, payload)
+                chat_message : SingleMessageResponse = self.stub.Parse(message_type, payload)
                 callback(chat_message)
+            # something like delete user update -> elif message_type == MESSAGE_TYPES.DeletedUserUpdate
 
 
         

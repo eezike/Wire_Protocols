@@ -1,6 +1,6 @@
 import sqlite3
 from contextlib import closing
-import wireprotocol as wp
+import backend.wireprotocol as wp
 
 class Database:
 
@@ -10,7 +10,7 @@ class Database:
         # Creates Users and Messages table if it does not exist
         with closing(self.conn.cursor()) as cursor:
             cursor.execute("""CREATE TABLE IF NOT EXISTS Users (username TEXT PRIMARY KEY, password TEXT NOT NULL)""")
-            cursor.execute("""CREATE TABLE IF NOT EXISTS Messages (id INTEGER PRIMARY KEY, _to TEXT, _from TEXT, message TEXT NOT NULL, FOREIGN KEY (_to) REFERENCES Users(username), FOREIGN KEY (_from) REFERENCES Users(username)) """)
+            cursor.execute("""CREATE TABLE IF NOT EXISTS Messages (id INTEGER PRIMARY KEY, recipient TEXT, sender TEXT, message TEXT NOT NULL, FOREIGN KEY (recipient) REFERENCES Users(username), FOREIGN KEY (sender) REFERENCES Users(username)) """)
             
             self.conn.commit()
     
@@ -39,9 +39,9 @@ class Database:
             
         
 
-    def save_message(self, _to: str, _from: str, msg: str) -> None:
+    def save_message(self, sender: str, recipient: str, content: str) -> None:
         with closing(self.conn.cursor()) as cursor:
-            cursor.execute("INSERT INTO Messages (_to, _from, message) VALUES (?, ?, ?)", (_to, _from, msg))
+            cursor.execute("INSERT INTO Messages (recipient, sender, message) VALUES (?, ?, ?)", (recipient, sender, content))
             self.conn.commit()
 
     def delete_message(self, msg_id: int) -> None:
@@ -51,12 +51,12 @@ class Database:
 
     def get_messages(self, username: str):
         with closing(self.conn.cursor()) as cursor:
-            res = cursor.execute("SELECT id, _from, message FROM Messages WHERE _to = ?", (username,)).fetchall()
+            res = cursor.execute("SELECT id, sender, message FROM Messages WHERE recipient = ?", (username,)).fetchall()
             
             for msg_id, _, _ in res:
                 self.delete_message(msg_id)
             
-            return [(_from, msg) for _, _from, msg in res]
+            return [(sender, content) for _, sender, content in res]
     
     def get_users(self) -> list[str]:
         with closing(self.conn.cursor()) as cursor:

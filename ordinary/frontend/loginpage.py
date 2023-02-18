@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox
 from frontend.homepage import HomePage
-import backend.wireprotocol as wp
+from backend.service_classes import Response
 
 class LoginPage(tk.Frame):
     def __init__(self, master):
@@ -56,13 +56,13 @@ class LoginPage(tk.Frame):
             messagebox.showerror("Login Failed", "Invalid username or password")
             return
 
-        response = self.master.client.send_login(username, password)
+        response : Response = self.master.client.login(username, password)
 
-        if response == wp.RESPONSE_CODE.LOGIN_SUCCESS:
+        if response.success:
             messagebox.showinfo("Login Successful", "Welcome " + username + "!")
             self.master.switch_frame(HomePage)
         else:
-            messagebox.showerror("Login Failed", "Invalid username or password")
+            messagebox.showerror("Login Failed", response.message)
             
     def register(self):
 
@@ -77,10 +77,10 @@ class LoginPage(tk.Frame):
             messagebox.showerror("Register Failed", "Username or password cannot exceed 20 characters")
             return
 
-        response = self.master.client.send_register(username, password)
+        response : Response = self.master.client.register(username, password)
 
-        if response == wp.RESPONSE_CODE.REGISTER_SUCCESS:
+        if response.success:
             messagebox.showinfo("Register Successful", "Account created successfully!")
             self.master.switch_frame(HomePage)
         else:
-            messagebox.showerror("Register Failed", "Account already exists")
+            messagebox.showerror("Register Failed", response.message)

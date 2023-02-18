@@ -1,4 +1,5 @@
 import struct
+import copy
 
 
 VERSION = 2
@@ -19,8 +20,6 @@ class MESSAGE_TYPES():
     SingleMessageResponse = 12
 
 
-
-
 class Message:
     def __init__(self):
         self.FORMAT = ""
@@ -30,7 +29,7 @@ class Message:
         return bytes
     
     def unpack(self, binary):
-        pass
+        return copy.deepcopy(self)
 
 
 class SendMessageRequest(Message):
@@ -50,8 +49,12 @@ class SendMessageRequest(Message):
         header = struct.pack(HEADER_FORMAT, VERSION, self.TYPE, len(payload))
         return header + payload
 
-    def unpack(self, binary):
-        pass
+    def unpack(self, binary) -> Message:
+        b_sender, b_recipient, b_content = struct.unpack(self.FORMAT, binary)
+        self.sender = b_sender.decode("ascii").rstrip('\x00')
+        self.recipient = b_recipient.decode("ascii").rstrip('\x00')
+        self.content = b_content.decode("ascii").rstrip('\x00')
+        return copy.deepcopy(self)
 
 
 class Response(Message):
@@ -69,8 +72,14 @@ class Response(Message):
         header = struct.pack(HEADER_FORMAT, VERSION, self.TYPE, len(payload))
         return header + payload
 
-    def unpack(self, binary):
-        pass
+    def unpack(self, binary) -> Message:
+        b_success, b_message = struct.unpack(self.FORMAT, binary)
+        self.success = b_success
+        self.message = b_message.decode("ascii").rstrip('\x00')
+        return copy.deepcopy(self)
+
+    def __repr__(self) -> str:
+        return f"Success: {self.success}; Message: {self.message}"
 
 class GetUsersRequest(Message):
     def __init__(self, username = None):
@@ -85,8 +94,10 @@ class GetUsersRequest(Message):
         header = struct.pack(HEADER_FORMAT, VERSION, self.TYPE, len(payload))
         return header + payload
 
-    def unpack(self, binary):
-        pass
+    def unpack(self, binary) -> Message:
+        b_username = struct.unpack(self.FORMAT, binary)[0]
+        self.username = b_username.decode("ascii").rstrip('\x00')
+        return copy.deepcopy(self)
 
 class UsersStreamResponse(Message):
     def __init__(self, username = None):
@@ -102,7 +113,9 @@ class UsersStreamResponse(Message):
         return header + payload
 
     def unpack(self, binary):
-        pass
+        b_username = struct.unpack(self.FORMAT, binary)[0]
+        self.username = b_username.decode("ascii").rstrip('\x00')
+        return copy.deepcopy(self)
 
 class MessagesStreamResponse(Message):
     def __init__(self, sender = None, content = None):
@@ -120,7 +133,10 @@ class MessagesStreamResponse(Message):
         return header + payload
 
     def unpack(self, binary):
-        pass
+        b_sender, b_content = struct.unpack(self.FORMAT, binary)
+        self.sender = b_sender.decode("ascii").rstrip('\x00')
+        self.content = b_content.decode("ascii").rstrip('\x00')
+        return copy.deepcopy(self)
 
 class LoginRequest(Message):
     def __init__(self, username = None, password = None):
@@ -138,7 +154,10 @@ class LoginRequest(Message):
         return header + payload
 
     def unpack(self, binary):
-        pass
+        b_username, b_password = struct.unpack(self.FORMAT, binary)
+        self.username = b_username.decode("ascii").rstrip('\x00')
+        self.password = b_password.decode("ascii").rstrip('\x00')
+        return copy.deepcopy(self)
 
 
 class RegisterRequest(Message):
@@ -157,7 +176,10 @@ class RegisterRequest(Message):
         return header + payload
 
     def unpack(self, binary):
-        pass
+        b_username, b_password = struct.unpack(self.FORMAT, binary)
+        self.username = b_username.decode("ascii").rstrip('\x00')
+        self.password = b_password.decode("ascii").rstrip('\x00')
+        return copy.deepcopy(self)
 
 class DeleteUserRequest(Message):
     def __init__(self, username = None):
@@ -173,7 +195,9 @@ class DeleteUserRequest(Message):
         return header + payload
 
     def unpack(self, binary):
-        pass
+        b_username = struct.unpack(self.FORMAT, binary)[0]
+        self.username = b_username.decode("ascii").rstrip('\x00')
+        return copy.deepcopy(self)
 
 
 class StreamEnd(Message):
@@ -186,7 +210,8 @@ class StreamEnd(Message):
         return header
     
     def unpack(self, binary):
-        pass
+        _ = struct.unpack(self.FORMAT, binary)
+        return []
 
 class Empty(Message):
     def __init__(self):
@@ -198,7 +223,8 @@ class Empty(Message):
         return header
     
     def unpack(self, binary):
-        pass
+        _ = struct.unpack(self.FORMAT, binary)
+        return copy.deepcopy(self)
 
 class GetMessagesRequest(Message):
     def __init__(self, username = None):
@@ -214,7 +240,9 @@ class GetMessagesRequest(Message):
         return header + payload
 
     def unpack(self, binary):
-        pass
+        b_username = struct.unpack(self.FORMAT, binary)[0]
+        self.username = b_username.decode("ascii").rstrip('\x00')
+        return copy.deepcopy(self)
 
 class SingleMessageResponse(Message):
     def __init__(self, sender = None, content = None):
@@ -232,4 +260,7 @@ class SingleMessageResponse(Message):
         return header + payload
     
     def unpack(self, binary):
-        pass
+        b_sender, b_content = struct.unpack(self.FORMAT, binary)
+        self.sender = b_sender.decode("ascii").rstrip('\x00')
+        self.content = b_content.decode("ascii").rstrip('\x00')
+        return copy.deepcopy(self)

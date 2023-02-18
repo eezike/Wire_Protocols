@@ -1,6 +1,6 @@
 import struct
 import socket
-from service_classes import VERSION, HEADER_FORMAT, MESSAGE_TYPES, Message, SendMessageRequest, Response, GetUsersRequest, UsersStreamResponse, MessagesStreamResponse, LoginRequest, RegisterRequest, DeleteUserRequest, StreamEnd, Empty, GetMessagesRequest, SingleMessageResponse
+from backend.service_classes import VERSION, HEADER_FORMAT, MESSAGE_TYPES, Message, SendMessageRequest, Response, GetUsersRequest, UsersStreamResponse, MessagesStreamResponse, LoginRequest, RegisterRequest, DeleteUserRequest, StreamEnd, Empty, GetMessagesRequest, SingleMessageResponse
 
 class Stub:
     def __init__(self, socket: socket, client : bool = False):
@@ -27,13 +27,24 @@ class Stub:
 
 
         
-    def Send(self, request: Message, recieve = False) -> Message:
-        binary_request = request.pack()
-        self.socket.sendall(binary_request)
+    def Send(self, payload: Message, recieve = False) -> Message:
+        binary_payload = payload.pack()
+        self.socket.sendall(binary_payload)
 
         if self.client or recieve:
             message_type, payload = self.Recv()
-            print("Caught in send")
+            return self.Parse(message_type, payload)
+        
+    def SendStream(self, payload_iterator: list[Message], recieve = False) -> Message:
+        binary_payload = bytes()
+        for req in payload_iterator:
+            binary_payload += req.pack()
+        binary_payload += StreamEnd().pack()
+
+        self.socket.sendall(binary_payload)
+
+        if self.client or recieve:
+            message_type, payload = self.Recv()
             return self.Parse(message_type, payload)
     
     def Recv(self) -> tuple[int, bytes]:
@@ -65,9 +76,9 @@ class Stub:
         if message_type in self.single_message_types_to_class:
             res = self.single_message_types_to_class[message_type]().unpack(payload)
         elif message_type in self.stream_message_types_to_class:
-            class_type = self.stream_message_types_to_class[message_type]
+            class_type : Message = self.stream_message_types_to_class[message_type]
             res = [class_type().unpack(payload)]
-            res = res + self.ParseStream(class_type)
+            res = res + self.ParseStream(message_type)
         else:
             res = Response(success= False, message= "Unknown message type")
 

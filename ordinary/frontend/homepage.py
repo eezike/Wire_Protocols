@@ -28,10 +28,19 @@ class HomePage(tk.Frame):
         send_button.grid(row=1, column=1, sticky="E", padx=10, pady=10)
 
         self.get_inbox()
-        # threading.Thread(target = self.listen).start()
+        threading.Thread(target = self.listen).start()
     
     def send_message(self):
+        
         content = self.message_input.get("1.0", 'end-1c')
+
+        if self.recipient.get() == " " or content.strip() == "":
+            messagebox.showerror("Error", "Invalid recipient or message")
+            return 
+        
+        if len(content) > 256:
+            messagebox.showerror("Error", "Max message length of 256 characters")
+            return
 
         self.master.client.send_message(self.recipient.get(), content)
         
@@ -48,7 +57,7 @@ class HomePage(tk.Frame):
     def get_inbox(self):
         inbox : list[MessagesStreamResponse] = self.master.client.get_messages()
         for message in inbox:
-            self.add_message(message.sender, message.content)
+            self.add_message(message.sender, message.content, True)
 
         if len(inbox) == 0:
             self.messages_list.insert("end", "NO NEW MESSAGES")

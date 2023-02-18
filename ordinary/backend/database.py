@@ -1,6 +1,5 @@
 import sqlite3
 from contextlib import closing
-import backend.wireprotocol as wp
 
 class Database:
 
@@ -19,7 +18,7 @@ class Database:
             res = cursor.execute("SELECT username, password FROM Users WHERE username = ?", (username,)).fetchall()
             
             if len(res) > 0:
-                raise Exception("Username already exists", wp.RESPONSE_CODE.REGISTER_INVALID_USERNAME)
+                raise Exception("Username already exists")
 
             cursor.execute("INSERT INTO Users (username, password) VALUES (?, ?)", (username, password))
             
@@ -30,12 +29,12 @@ class Database:
             res = cursor.execute("SELECT username, password FROM Users WHERE username = ?", (username,)).fetchall()
 
             if len(res) != 1:
-                raise Exception("Account does not exist", wp.RESPONSE_CODE.LOGIN_NO_ACCOUNT)
+                raise Exception("Account does not exist")
             
             _, password = res[0]
             
             if password != attempted_password:
-                raise Exception("Wrong password", wp.RESPONSE_CODE.LOGIN_INVALID_PASSWORD)
+                raise Exception("Incorrect password")
             
         
 
@@ -69,7 +68,7 @@ class Database:
 
             res = cursor.execute("SELECT username FROM Users WHERE username = ?", (username,)).fetchall()
             if len(res) == 0:
-                raise Exception("Account does not exist", wp.RESPONSE_CODE.UNKNOWN_ERROR)
+                raise Exception("Account does not exist")
 
             cursor.execute("DELETE FROM Users WHERE username = ?", (username,))
             self.conn.commit()

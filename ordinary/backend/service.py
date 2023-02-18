@@ -50,6 +50,11 @@ class Stub:
     def Recv(self) -> tuple[int, bytes]:
         """Receive a message from the socket"""
         header = self.socket.recv(struct.calcsize(HEADER_FORMAT))
+
+        if not header:
+            print("Connection broken by client")
+            raise ConnectionResetError
+
         version, message_type, payload_size = struct.unpack(HEADER_FORMAT, header)
         if version != VERSION:
             print("Error: incorrect version #" + str(version))
@@ -69,7 +74,7 @@ class Stub:
             if message_type != expected_message_type:
                 raise Exception(f"Unexpected message type {message_type} caught in stream for message type {expected_message_type}")
             
-            return [class_type().unpack(payload)] + self.ParseStream(type)
+            return [class_type().unpack(payload)] + self.ParseStream(expected_message_type)
     
     def Parse(self, message_type: int, payload: bytes) -> tuple[int, any]:
 

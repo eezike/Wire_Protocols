@@ -45,44 +45,53 @@ class Server:
 			threading.Thread(target = self.handle_client, args = (clientsocket, addr)).start()
 
 	def handle_client(self, clientsocket: socket, addr : int) -> None:
+		try:
+			message_type_to_function = {
+				MESSAGE_TYPES.SendMessageRequest : self.send_message,
+				# MESSAGE_TYPES.Response : 0,
+				MESSAGE_TYPES.GetUsersRequest : self.get_users,
+				# MESSAGE_TYPES.UsersStreamResponse : 0,
+				# MESSAGE_TYPES.MessagesStreamResponse : 0,
+				# MESSAGE_TYPES.LoginRequest : 0,
+				# MESSAGE_TYPES.RegisterRequest : 0,
+				MESSAGE_TYPES.DeleteUserRequest : self.delete_user,
+				# MESSAGE_TYPES.StreamEnd : 0,
+				# MESSAGE_TYPES.Empty : 0,
+				MESSAGE_TYPES.GetMessagesRequest : self.get_messages,
+				# MESSAGE_TYPES.SingleMessageResponse : 0,
+			}
 
-		message_type_to_function = {
-			MESSAGE_TYPES.SendMessageRequest : self.send_message,
-			# MESSAGE_TYPES.Response : 0,
-			MESSAGE_TYPES.GetUsersRequest : self.get_users,
-			# MESSAGE_TYPES.UsersStreamResponse : 0,
-			# MESSAGE_TYPES.MessagesStreamResponse : 0,
-			# MESSAGE_TYPES.LoginRequest : 0,
-			# MESSAGE_TYPES.RegisterRequest : 0,
-			MESSAGE_TYPES.DeleteUserRequest : self.delete_user,
-			# MESSAGE_TYPES.StreamEnd : 0,
-			# MESSAGE_TYPES.Empty : 0,
-			MESSAGE_TYPES.GetMessagesRequest : self.get_messages,
-			# MESSAGE_TYPES.SingleMessageResponse : 0,
-		}
+			stub = Stub(clientsocket)
+			# sends a message to the client whose user object is clientsocket
+			response = Response(success=True, message= "Welcome to the chat service!")
+			stub.Send(response)
 
-		stub = Stub(clientsocket)
-		# sends a message to the client whose user object is clientsocket
-		response = Response(success=True, message= "Welcome to the chat service!")
-		stub.Send(response)
-
-		while True:
-
-			# loop until authenticated
 			while True:
-				username = self.authenticate(clientsocket, stub)
-				if username:
-					break
 
-			while username in self.authenticated_users:
-				message_type, payload = stub.Recv()
+				# loop until authenticated
+				while True:
+					username = self.authenticate(clientsocket, stub)
+					if username:
+						break
 
-				if message_type in message_type_to_function:
-					message_type_to_function[message_type](message_type, payload, stub)
-				else:
-					# error
-					response = Response(success=False, message= "Unexpected message type")
-					stub.Send(response)
+				while username in self.authenticated_users:
+					message_type, payload = stub.Recv()
+
+					if message_type in message_type_to_function:
+						message_type_to_function[message_type](message_type, payload, stub)
+					else:
+						# error
+						response = Response(success=False, message= "Unexpected message type")
+						stub.Send(response)
+		
+		except (ConnectionResetError, BrokenPipeError):
+			print(addr[0] + ' disconnected unexpectedly')
+
+		finally:
+			clientsocket.close()
+			if username in self.authenticated_users:
+				self.authenticated_users[username].remove(clientsocket)
+			del self.current_sockets[addr]
 
 				
 

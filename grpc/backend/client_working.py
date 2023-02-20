@@ -42,43 +42,41 @@ class Client():
             content = input("Content: ")
 
             # Create a message request
-            request = chat_service_pb2.SendRequest(sender = self.username, 
-                                                recipient = recipient, 
-                                                content = content)
+            request = chat_service_pb2.SendRequest(sender = self.username, recipient = recipient, content = content)
             
             # Send message to the server via stub
             self.chat_stub.SendMessage(request)
 
 
-    def home():
-        """
-        Chat application's home page (post-login)
-        """
-        global username
+    # def home():
+    #     """
+    #     Chat application's home page (post-login)
+    #     """
+    #     global username
         
-        print("\nHome")
+    #     print("\nHome")
 
-        print("\nInbox:")
-        messageObjs = chat_stub.ReceiveMessage(chat_service_pb2.User(username = username))
-        no_messages = True
-        for messageObj in messageObjs:
-            print(f"{messageObj.sender}: {messageObj.content}")
-            no_messages = False
-        if no_messages:
-            print("Empty")
+    #     print("\nInbox:")
+    #     messageObjs = chat_stub.ReceiveMessage(chat_service_pb2.User(username = username))
+    #     no_messages = True
+    #     for messageObj in messageObjs:
+    #         print(f"{messageObj.sender}: {messageObj.content}")
+    #         no_messages = False
+    #     if no_messages:
+    #         print("Empty")
         
-        # Get users
-        users = []
-        userObjs = chat_stub.GetUsers(chat_service_pb2.Empty())
+    #     # Get users
+    #     users = []
+    #     userObjs = chat_stub.GetUsers(chat_service_pb2.Empty())
 
-        for userObj in userObjs:
-            users.append(userObj.username)
+    #     for userObj in userObjs:
+    #         users.append(userObj.username)
 
-        print("\nUsers: ", users)
+    #     print("\nUsers: ", users)
 
-        # Simultaneously send and receive in separate threads
-        threading.Thread(target = send_messages).start()
-        threading.Thread(target = receive_messages).start()
+    #     # Simultaneously send and receive in separate threads
+    #     threading.Thread(target = send_messages).start()
+    #     threading.Thread(target = receive_messages).start()
         
 
     def login(self):

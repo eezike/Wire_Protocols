@@ -5,6 +5,9 @@ import backend.chat_service_pb2_grpc as chat_service_pb2_grpc
 from collections import defaultdict
 import pickle
 
+PORT = '50051'
+MAX_CLIENTS = 10
+
 def storeData(db):
     """
     It opens db.pkl file in write binary mode, and then dumps our db to the file.
@@ -32,7 +35,7 @@ db = loadData()
 
 class AuthServiceServicer(chat_service_pb2_grpc.AuthServiceServicer):
     """
-    Define a gRPC service implementation class that inherits our Auth service stub definition.
+    Define a gRPC service implementation class that inherits Auth service stub definition.
 
     Implements Login() and Register() functions
     """
@@ -90,42 +93,58 @@ class ChatServiceServicer(chat_service_pb2_grpc.ChatServiceServicer):
 
     Implements SendMessage() and ReceiveMessage() and GetUser() functions.
     """
-    def SendMessage(self, request, context):
 
+    def SendMessage(self, request, context):
+        """
+        Sends a message from a sender to a recipient based on request details. 
+        """
         sender = request.sender
         recipient = request.recipient
         content = request.content
 
+        # Return error code for invalid recipient/senders
         if sender not in db["passwords"] or recipient not in db["passwords"]:
-            # send an error later
             return chat_service_pb2.SendResponse(success = False, message = "Invalid sender or recipient")
 
+        # Store message in db and return success code
         print(f"Received message from {sender} to {recipient}: {content}")
-
         db["messages"][recipient].append(request)
         
-
         return chat_service_pb2.SendResponse(success = True, message = "Message sent")
 
     def GetUsers(self, request, context):
+        """
+        Return the current users in the database.
+        """
         for user in db["passwords"]:
             yield chat_service_pb2.User(username = user)
     
     def ReceiveMessage(self, request, context):
+        """
+        Retrives all messages made to a recipient. Deletes 
+        """
+
         recipient = request.username 
 
-        for i in range(len(db["messages"][recipient]) - 1, -1, -1):
+        # Retrieve all messages made to a recipient, deleting as we go. 
+        # Loop in reverse order to maintain order messages were received.
+        for i in range(len(db["messages"][recipient]) - 1, -1, -1): 
             message = db["messages"][recipient][i]
             yield chat_service_pb2.ChatMessage(sender = message.sender, content = message.content)
             db["messages"][recipient].pop()
             storeData(db)
         
 def serve():
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    """
+    Starts the gRPC server with both Chat and Auth servicers, with a cap
+    for the amount of clients it can hold, at a PORT. 
+    """
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=MAX_CLIENTS))
     chat_service_pb2_grpc.add_AuthServiceServicer_to_server(AuthServiceServicer(), server)
     chat_service_pb2_grpc.add_ChatServiceServicer_to_server(ChatServiceServicer(), server)
-    server.add_insecure_port('[::]:50051')
+    server.add_insecure_port('[::]:' + PORT)
     server.start()
+    print("Server initialized.")
     server.wait_for_termination()
 
 if __name__ == '__main__':

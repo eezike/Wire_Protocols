@@ -5,7 +5,14 @@ import backend.chat_service_pb2_grpc as chat_service_pb2_grpc
 from backend.client import Client 
 
 class Application(tk.Tk):
+    """
+    Tkinter GUI application.
+    """
+
     def __init__(self):
+        """
+        Initializes our application with a client object. Starts at the connect page.
+        """
         tk.Tk.__init__(self)
         self._frame = None
         self.switch_frame(ConnectPage)

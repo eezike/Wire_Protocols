@@ -31,38 +31,47 @@ class HomePage(tk.Frame):
         send_button = tk.Button(self, text="Send", command=self.send_message)
         send_button.grid(row=1, column=1, sticky="E", padx=10, pady=10)
 
-        # 
+        # Recieve messages constantly in a thread
         threading.Thread(target = self.receive_messages).start()
     
     def send_message(self):
+        """
+        Send message to a recipient selected in the dropdown.
+        """
         body = self.message_input.get("1.0", 'end-1c')
+
+        # Msg error checking
         if len(body) == 0 or len(self.recipient.get()) == 0:
             messagebox.showerror("Message Send Failed", "Cannot send empty messages")
-        elif self.recipient.get() == self.master.client.username:
+            return
+        
+        if self.recipient.get() == self.master.client.username:
             messagebox.showerror("Message Send Failed", "Cannot send messages to yourself")
-        else:
-            self.master.client.send_message(self.recipient.get(), body)
-            self.add_message(self.recipient.get(), "You", body)
+            return
+        
+        # Send the message to the server and add it to our message list
+        self.master.client.send_message(self.recipient.get(), body)
+        self.add_message(self.recipient.get(), body)
 
+        # Reset text input
         self.message_input.delete("1.0", tk.END)
 
     def receive_messages(self):
         """
+        Receives messages and adds them to the inbox continuously.  
         """
         while True:
             messages = self.master.client.receive_messages()
             for message in messages:
-                self.add_message("You", message.sender, message.content)
+                self.add_message(message.sender, message.content, True)
 
 
-    def add_message(self, sender, recipient, body):
+    def add_message(self, other, body, receiver = False):
         """
-        
+        Adds a message to the GUI's messagebox/listbox element
         """
-        self.messages_list.insert("end", f"{sender} -> {recipient}: {body}")
-
-    # def recipient_selected(self, *args):
-    #     pass
-    #     # selected_option = self.recipient.get()
-    #     # print(f"Recepient: {selected_option}")
-    
+        # Format msg differently for receivers & senders
+        if receiver:
+            self.messages_list.insert("end", f"{other}: {body}")
+        else:
+            self.messages_list.insert("end", f"You -> {other}: {body}")

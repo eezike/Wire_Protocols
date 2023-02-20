@@ -23,7 +23,6 @@ class HomePage(tk.Frame):
         self.message_input = tk.Text(self, height=3, width=30)
         self.message_input.grid(row=0, column=2, sticky="W", padx=10, pady=10)
 
-
         send_button = tk.Button(self, text="Send", command=self.send_message)
         send_button.grid(row=1, column=1, sticky="E", padx=10, pady=10)
 
@@ -41,11 +40,13 @@ class HomePage(tk.Frame):
         if len(content) > 256:
             messagebox.showerror("Error", "Max message length of 256 characters")
             return
+        
+        if self.recipient.get() == self.master.client.username:
+            messagebox.showerror("Message Send Failed", "Cannot send messages to yourself")
+            return
 
         self.master.client.send_message(self.recipient.get(), content)
-        
         self.add_message(self.recipient.get(), content)
-        
         self.message_input.delete("1.0", tk.END)
 
     def add_message(self, other, content, receiver = False):

@@ -9,7 +9,7 @@ class HomePage(tk.Frame):
 
         self.master = master
 
-        # Exit boolean to stop receive messages thread
+        # Exit boolean to stop receive messages thread (i.e. we want to close GUI)
         self.receiving = True
 
         # Message list
@@ -35,7 +35,7 @@ class HomePage(tk.Frame):
         self.send_button.grid(row=1, column=1, sticky="E", padx=10, pady=10)
 
         # Create reset option button
-        self.reset_button = tk.Button(self, text="Reset Options", command=self.reset)
+        self.reset_button = tk.Button(self, text="Reset Options", command=self.reset_dropdown)
         self.reset_button.grid(row=1, column=2, sticky="E", padx=0, pady=0)
 
         # Create delete button
@@ -98,14 +98,21 @@ class HomePage(tk.Frame):
             self.receiving = False 
             self.master.destroy()
 
+    def reset_dropdown(self):
+        """
+        Function that just resets the current dropdown list by getting the users 
+        from the server again.
+
+        Work-around to deal with people creating/deleting accounts once logged in.
+        Avoids pub/subscribe method (which is the ideal).
+        """
+        self.options = self.master.client.get_users()
+        self.dropdown = tk.OptionMenu(self, self.recipient, *self.options, command=self.recipient_selected)
+        self.dropdown.grid(row=0, column=1, padx=10, pady=10)
+        self.message_input.delete("1.0", tk.END)
+
     def recipient_selected(self, *args):
         """
         Function needed for dropdown documentation
         """
         pass
-
-    def reset(self):
-        self.options = self.master.client.get_users()
-        self.dropdown = tk.OptionMenu(self, self.recipient, *self.options, command=self.recipient_selected)
-        self.dropdown.grid(row=0, column=1, padx=10, pady=10)
-        self.message_input.delete("1.0", tk.END)

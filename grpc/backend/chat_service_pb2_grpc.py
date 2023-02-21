@@ -6,7 +6,9 @@ import backend.chat_service_pb2 as chat__service__pb2
 
 
 class ChatServiceStub(object):
-    """Missing associated documentation comment in .proto file."""
+    """Define Chat Service & Message Types
+
+    """
 
     def __init__(self, channel):
         """Constructor.
@@ -32,7 +34,9 @@ class ChatServiceStub(object):
 
 
 class ChatServiceServicer(object):
-    """Missing associated documentation comment in .proto file."""
+    """Define Chat Service & Message Types
+
+    """
 
     def SendMessage(self, request, context):
         """Missing associated documentation comment in .proto file."""
@@ -78,7 +82,9 @@ def add_ChatServiceServicer_to_server(servicer, server):
 
  # This class is part of an EXPERIMENTAL API.
 class ChatService(object):
-    """Missing associated documentation comment in .proto file."""
+    """Define Chat Service & Message Types
+
+    """
 
     @staticmethod
     def SendMessage(request,
@@ -133,7 +139,7 @@ class ChatService(object):
 
 
 class AuthServiceStub(object):
-    """Auth Service
+    """Define Auth Service & Messages
 
     """
 
@@ -153,10 +159,15 @@ class AuthServiceStub(object):
                 request_serializer=chat__service__pb2.RegisterRequest.SerializeToString,
                 response_deserializer=chat__service__pb2.RegisterResponse.FromString,
                 )
+        self.Delete = channel.unary_unary(
+                '/chat.AuthService/Delete',
+                request_serializer=chat__service__pb2.DeleteRequest.SerializeToString,
+                response_deserializer=chat__service__pb2.DeleteResponse.FromString,
+                )
 
 
 class AuthServiceServicer(object):
-    """Auth Service
+    """Define Auth Service & Messages
 
     """
 
@@ -167,6 +178,12 @@ class AuthServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def Register(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def Delete(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -185,6 +202,11 @@ def add_AuthServiceServicer_to_server(servicer, server):
                     request_deserializer=chat__service__pb2.RegisterRequest.FromString,
                     response_serializer=chat__service__pb2.RegisterResponse.SerializeToString,
             ),
+            'Delete': grpc.unary_unary_rpc_method_handler(
+                    servicer.Delete,
+                    request_deserializer=chat__service__pb2.DeleteRequest.FromString,
+                    response_serializer=chat__service__pb2.DeleteResponse.SerializeToString,
+            ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
             'chat.AuthService', rpc_method_handlers)
@@ -193,7 +215,7 @@ def add_AuthServiceServicer_to_server(servicer, server):
 
  # This class is part of an EXPERIMENTAL API.
 class AuthService(object):
-    """Auth Service
+    """Define Auth Service & Messages
 
     """
 
@@ -228,5 +250,22 @@ class AuthService(object):
         return grpc.experimental.unary_unary(request, target, '/chat.AuthService/Register',
             chat__service__pb2.RegisterRequest.SerializeToString,
             chat__service__pb2.RegisterResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def Delete(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/chat.AuthService/Delete',
+            chat__service__pb2.DeleteRequest.SerializeToString,
+            chat__service__pb2.DeleteResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

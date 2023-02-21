@@ -4,7 +4,10 @@ import backend.chat_service_pb2 as chat_service_pb2
 import backend.chat_service_pb2_grpc as chat_service_pb2_grpc
 from collections import defaultdict
 import pickle
+import socket
 
+
+HOST = socket.gethostbyname(socket.gethostname())
 PORT = '50051'
 MAX_CLIENTS = 10
 
@@ -37,7 +40,7 @@ class AuthServiceServicer(chat_service_pb2_grpc.AuthServiceServicer):
     """
     Define a gRPC service implementation class that inherits Auth service stub definition.
 
-    Implements Login() and Register() functions
+    Implements Login(), Register(), and Delete() functions
     """
 
     def Login(self, request, context):
@@ -86,6 +89,29 @@ class AuthServiceServicer(chat_service_pb2_grpc.AuthServiceServicer):
             response = chat_service_pb2.RegisterResponse(success=False, message='This username is taken')
 
         return response
+    
+    def Delete(self, request, context):
+        """
+        Deletes a user from our database
+        """
+        username = request.username
+
+        # Check if the requested user to delete is in our database
+        if username in db["passwords"]:
+
+            # Delete the account, and the messages associated with it. 
+            del db["passwords"][username]
+            del db["messages"][username]
+
+            storeData(db) # Save the db
+
+            # Send deletion response success
+            response = chat_service_pb2.DeleteResponse(success=True, message='Account deleted')
+        else:
+            # Send deletion response error
+            response = chat_service_pb2.DeleteResponse(success=False, message='Account does not exist')
+
+        return response
 
 class ChatServiceServicer(chat_service_pb2_grpc.ChatServiceServicer):
     """
@@ -123,7 +149,6 @@ class ChatServiceServicer(chat_service_pb2_grpc.ChatServiceServicer):
         """
         Retrives all messages made to a recipient. Deletes 
         """
-
         recipient = request.username 
 
         # Retrieve all messages made to a recipient, deleting as we go. 
@@ -142,9 +167,9 @@ def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=MAX_CLIENTS))
     chat_service_pb2_grpc.add_AuthServiceServicer_to_server(AuthServiceServicer(), server)
     chat_service_pb2_grpc.add_ChatServiceServicer_to_server(ChatServiceServicer(), server)
-    server.add_insecure_port('[::]:' + PORT)
+    server.add_insecure_port(HOST + ':' + PORT)
     server.start()
-    print("Server initialized.")
+    print("Server initialized at " + HOST)
     server.wait_for_termination()
 
 if __name__ == '__main__':

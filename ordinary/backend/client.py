@@ -8,67 +8,101 @@ from backend.service_classes import VERSION, HEADER_FORMAT, MESSAGE_TYPES, Messa
 from backend.service import Stub
 
 
+# Define the Client class
 class Client:
+    
+    # Initialize the class and set some default properties
     def __init__(self):
         self.clientsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.connected = False
         self.username = None
         self.stub = Stub(self.clientsocket, client = True)
-
+    
+    # Connect to the specified host and port
     def connect(self, host="10.228.185.36", port=9999):
+        # If not already connected, try to connect
         if not self.connected:
             try:
                 self.clientsocket.connect((host, port))
+                # Receive a response from the server and parse it
                 message_type, payload = self.stub.Recv()
                 response : Response = self.stub.Parse(message_type, payload)
-
+                
+                # If the response indicates success, set connected to True
                 if response.success:
                     self.connected = True
             except:
                 pass
-
+        
+        # Return the value of connected
         return self.connected
-
+    
+    # Log in to the chat server with the specified username and password
     def login(self, username, password) -> Response:
+        # Create a LoginRequest object with the specified username and password
         request = LoginRequest(username= username, password= password)
+        # Send the request to the server and parse the response
         response : Response = self.stub.Send(request)
+        # Set the value of the username property
         self.username = username
+        # Return the response
         return response
-
+    
+    # Register a new account with the specified username and password
     def register(self, username, password) -> Response:
+        # Create a RegisterRequest object with the specified username and password
         request = RegisterRequest(username= username, password= password)
+        # Send the request to the server and parse the response
         response : Response = self.stub.Send(request)
+        # Set the value of the username property
         self.username = username
+        # Return the response
         return response
     
+    # Send a message to the specified recipient with the specified content
     def send_message(self, recipient, content) -> Response:
+        # Create a SendMessageRequest object with the sender username, recipient username, and message content
         request = SendMessageRequest(sender= self.username, recipient= recipient, content= content)
+        # Send the request to the server and parse the response
         response : Response = self.stub.Send(request)
+        # Return the response
         return response
     
+    # Get a list of users currently connected to the chat server
     def get_users(self) -> list[UsersStreamResponse]:
+        # Create a GetUsersRequest object with the username of the current user
         request = GetUsersRequest(username = self.username)
+        # Send the request to the server and parse the response, which is a list of UsersStreamResponse objects
         response : list[UsersStreamResponse] = self.stub.Send(request)
+        # Extract the usernames from the UsersStreamResponse objects and return them as a list
         return [user.username for user in response]
     
+    # Get a list of messages sent to the current user
     def get_messages(self) -> list[MessagesStreamResponse]:
+        # Create a GetMessagesRequest object with the username of the current user
         request = GetMessagesRequest(username = self.username)
+        # Send the request to the server and parse the response, which is a list of MessagesStreamResponse objects
         response : list[MessagesStreamResponse] = self.stub.Send(request)
+        # Return the list of MessagesStreamResponse objects
         return response
     
     def delete_account(self) -> Response:
-        request = DeleteUserRequest(username = self.username)
-        response : Response = self.stub.Send(request)
+        # create a request to delete the current user's account
+        request = DeleteUserRequest(username=self.username)
+        # send the request and wait for the response
+        response: Response = self.stub.Send(request)
+        # return the response
         return response
-    
-    def listen_for_updates(self, callback):
-        while True:
-            message_type, payload = self.stub.Recv()
-
-            if message_type == MESSAGE_TYPES.SingleMessageResponse:
-                chat_message : SingleMessageResponse = self.stub.Parse(message_type, payload)
-                callback(chat_message)
-            # something like delete user update -> elif message_type == MESSAGE_TYPES.DeletedUserUpdate
-
-
         
+    def listen_for_updates(self, callback):
+        # keep listening for updates indefinitely
+        while True:
+            # receive a message from the server
+            message_type, payload = self.stub.Recv()
+            
+            # if the message is a single chat message, parse it as such and call the callback function
+            if message_type == MESSAGE_TYPES.SingleMessageResponse:
+                chat_message: SingleMessageResponse = self.stub.Parse(message_type, payload)
+                callback(chat_message)
+            # if the message is a user deletion update, handle it accordingly
+            # e.g. `elif message_type == MESSAGE_TYPES.DeletedUserUpdate: handle_deleted_user_update()`

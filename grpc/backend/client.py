@@ -68,6 +68,14 @@ class Client:
 
         return response
     
+    def delete_account(self):
+        """
+        Delete's the client's account from the server's database.
+        """
+        request = chat_service_pb2.DeleteRequest(username = self.username)
+        response = self.auth_stub.Delete(request)
+        return response
+
     def register(self, username, password):
         """
         Registers a user with the server's database with given credentials. 

@@ -1,6 +1,6 @@
 import struct
 import socket
-from backend.service_classes import VERSION, HEADER_FORMAT, MESSAGE_TYPES, Message, SendMessageRequest, Response, GetUsersRequest, UsersStreamResponse, MessagesStreamResponse, LoginRequest, RegisterRequest, DeleteUserRequest, StreamEnd, Empty, GetMessagesRequest, SingleMessageResponse
+from backend.service_classes import VERSION, HEADER_FORMAT, MESSAGE_TYPES, Message, SendMessageRequest, Response, GetUsersRequest, UsersStreamResponse, MessagesStreamResponse, LoginRequest, RegisterRequest, DeleteUserRequest, StreamEnd, Error, GetMessagesRequest, SingleMessageResponse, DeleteUserResponse
 
 class Stub:
     '''
@@ -20,9 +20,10 @@ class Stub:
             MESSAGE_TYPES.RegisterRequest :  RegisterRequest,
             MESSAGE_TYPES.DeleteUserRequest :  DeleteUserRequest,
             MESSAGE_TYPES.StreamEnd :  StreamEnd,
-            MESSAGE_TYPES.Empty : Empty,
+            MESSAGE_TYPES.Error : Error,
             MESSAGE_TYPES.GetMessagesRequest: GetMessagesRequest,
-            MESSAGE_TYPES.SingleMessageResponse: SingleMessageResponse
+            MESSAGE_TYPES.SingleMessageResponse: SingleMessageResponse,
+            MESSAGE_TYPES.DeleteUserResponse: DeleteUserResponse
         }
 
         # Define another dictionary that maps stream message types to message classes
@@ -32,14 +33,14 @@ class Stub:
         }
 
     # Define a method to send a message to the socket
-    def Send(self, payload: Message, recieve = False) -> Message:
+    def Send(self, payload: Message, recieve = True) -> Message:
         # Convert the payload message to binary format
         binary_payload = payload.pack()
         # Send the binary payload to the socket
         self.socket.sendall(binary_payload)
 
-        # If client or receive is true, receive the message and return it
-        if self.client or recieve:
+        # If client or receive is true, receive the message and return the response
+        if self.client and recieve:
             message_type, payload = self.Recv()
             return self.Parse(message_type, payload)
     
@@ -54,11 +55,6 @@ class Stub:
 
         # Send the binary payload to the socket
         self.socket.sendall(binary_payload)
-
-        # If client or receive is true, receive the message and return it
-        if self.client or recieve:
-            message_type, payload = self.Recv()
-            return self.Parse(message_type, payload)
     
     # Define a method to receive a message from the socket
     def Recv(self) -> tuple[int, bytes]:
@@ -74,13 +70,13 @@ class Stub:
         # Unpack the header data to get the message version, type, and payload size
         version, message_type, payload_size = struct.unpack(HEADER_FORMAT, header)
 
-        # If the version is incorrect, print an error message and return None
+        # If the version is incorrect, rais an exception
         if version != VERSION:
-            print("Error: incorrect version #" + str(version))
-            return None, None
+            raise Exception("Error: incorrect version #" + str(version))
         
         # Receive the payload of the message from the socket
         payload = self.socket.recv(payload_size)
+
         # Return the message type and payload as a tuple
         return message_type, payload
     
@@ -104,7 +100,7 @@ class Stub:
             # Parse the payload and add it to the result list
             return [class_type().unpack(payload)] + self.ParseStream(expected_message_type)
 
-    def Parse(self, message_type: int, payload: bytes) -> tuple[int, any]:
+    def Parse(self, message_type: int, payload: bytes) -> Message:
 
         # Check if the message type is a single message type or a stream message type
         if message_type in self.single_message_types_to_class:
@@ -116,7 +112,7 @@ class Stub:
             res = [class_type().unpack(payload)]
             res = res + self.ParseStream(message_type)
         else:
-            # If the message type is unknown, return a Response with success=False and a message indicating that the message type is unknown
-            res = Response(success= False, message= "Unknown message type")
+            # If the message type is unknown, return a Error with a message indicating that the message type is unknown
+            res = Error( message= "Unknown message type")
 
         return res

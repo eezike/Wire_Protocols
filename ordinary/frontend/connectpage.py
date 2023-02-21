@@ -1,5 +1,4 @@
 import tkinter as tk
-from frontend.loginpage import LoginPage
 from tkinter import messagebox
 
 class ConnectPage(tk.Frame):
@@ -32,17 +31,24 @@ class ConnectPage(tk.Frame):
         self.connect_button.grid(row=2, column=0, pady=10, padx=10, sticky="W")
 
 
+    # a method to establish a connection with the given host and port
     def connect(self):
+        # extract the host and port values from the respective entries
         host = self.host_entry.get()
         port = self.port_entry.get()
 
+        # validate if port is an integer
         try:
             port = int(port)
         except:
+            # if not, show an error message box and return from the method
             messagebox.showerror("Input Error", "Port must be an integer")
             return
 
+        # attempt to connect to the server with the given host and port
         if self.master.client.connect(host, port):
-            self.master.switch_frame(LoginPage)
+            # if the connection is successful, switch the frame to the login page
+            self.master.switch_frame(1)
         else:
+            # if the connection is not successful, show an error message box with an appropriate message
             messagebox.showerror("Connection Timeout", "Invalid host or port")

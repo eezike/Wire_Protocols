@@ -4,7 +4,7 @@
 # Emeka: 10.250.150.39
 # Python program to implement client side of chat room.
 import socket
-from backend.service_classes import VERSION, HEADER_FORMAT, MESSAGE_TYPES, Message, SendMessageRequest, Response, GetUsersRequest, UsersStreamResponse, MessagesStreamResponse, LoginRequest, RegisterRequest, DeleteUserRequest, StreamEnd, Empty, GetMessagesRequest, SingleMessageResponse
+from backend.service_classes import VERSION, HEADER_FORMAT, MESSAGE_TYPES, Message, SendMessageRequest, Response, GetUsersRequest, UsersStreamResponse, MessagesStreamResponse, LoginRequest, RegisterRequest, DeleteUserRequest, StreamEnd, Error, GetMessagesRequest, SingleMessageResponse
 from backend.service import Stub
 
 
@@ -60,14 +60,12 @@ class Client:
         return response
     
     # Send a message to the specified recipient with the specified content
-    def send_message(self, recipient, content) -> Response:
+    def send_message(self, recipient, content) -> None:
         # Create a SendMessageRequest object with the sender username, recipient username, and message content
         request = SendMessageRequest(sender= self.username, recipient= recipient, content= content)
-        # Send the request to the server and parse the response
-        response : Response = self.stub.Send(request)
-        # Return the response
-        return response
-    
+        # Send the request to the server
+        self.stub.Send(request, recieve= False)
+
     # Get a list of users currently connected to the chat server
     def get_users(self) -> list[UsersStreamResponse]:
         # Create a GetUsersRequest object with the username of the current user
@@ -86,23 +84,16 @@ class Client:
         # Return the list of MessagesStreamResponse objects
         return response
     
-    def delete_account(self) -> Response:
+    def delete_account(self) -> None:
         # create a request to delete the current user's account
         request = DeleteUserRequest(username=self.username)
-        # send the request and wait for the response
-        response: Response = self.stub.Send(request)
-        # return the response
-        return response
+        # send the request
+        self.stub.Send(request, recieve= False)
+
         
-    def listen_for_updates(self, callback):
-        # keep listening for updates indefinitely
-        while True:
-            # receive a message from the server
-            message_type, payload = self.stub.Recv()
-            
-            # if the message is a single chat message, parse it as such and call the callback function
-            if message_type == MESSAGE_TYPES.SingleMessageResponse:
-                chat_message: SingleMessageResponse = self.stub.Parse(message_type, payload)
-                callback(chat_message)
-            # if the message is a user deletion update, handle it accordingly
-            # e.g. `elif message_type == MESSAGE_TYPES.DeletedUserUpdate: handle_deleted_user_update()`
+    def listen_for_updates(self):
+        # receive a message from the server
+        message_type, payload = self.stub.Recv()
+        response = self.stub.Parse(message_type, payload)
+
+        return message_type, response

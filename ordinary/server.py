@@ -2,9 +2,10 @@
 import socket
 import threading
 import backend.database as database
-from backend.service_classes import VERSION, HEADER_FORMAT, MESSAGE_TYPES, Message, SendMessageRequest, Response, GetUsersRequest, UsersStreamResponse, MessagesStreamResponse, LoginRequest, RegisterRequest, DeleteUserRequest, StreamEnd, Empty, GetMessagesRequest, SingleMessageResponse
+from backend.service_classes import VERSION, HEADER_FORMAT, MESSAGE_TYPES, Message, SendMessageRequest, Response, GetUsersRequest, UsersStreamResponse, MessagesStreamResponse, LoginRequest, RegisterRequest, DeleteUserRequest, StreamEnd, Error, GetMessagesRequest, SingleMessageResponse, DeleteUserResponse
 from backend.service import Stub
 from collections import defaultdict
+import queue
 
 class Server:
 	'''
@@ -33,6 +34,19 @@ class Server:
 
 		# The max amount of users the server will accept
 		self.MAX_CLIENTS = max_clients
+	
+		# create a thread-safe queue to buffer messages to be sent
+		self.message_queue = defaultdict(queue.Queue)
+
+	def send_in_queue(self, socket : socket):
+		while True:
+			message = self.message_queue[socket].get()
+			if type(message) is list:
+				Stub(socket).SendStream(message)
+			else:
+				Stub(socket).Send(message)
+			self.message_queue[socket].task_done()
+
 	
 	def run(self):
 
@@ -70,7 +84,10 @@ class Server:
 
 			# Send a welcome message to the client
 			response = Response(success=True, message= "Welcome to the chat service!")
-			stub.Send(response)
+			self.message_queue[clientsocket].put(response)
+
+			# start a new thread to handle the client connection
+			threading.Thread(target = self.send_in_queue, args = (clientsocket,)).start()
 
 			# Loop forever
 			while True:
@@ -89,11 +106,11 @@ class Server:
 					# Check if the received message type is supported
 					if message_type in message_type_to_function:
 						# Call the appropriate function to handle the message
-						message_type_to_function[message_type](message_type, payload, stub)
+						message_type_to_function[message_type](message_type, payload, clientsocket)
 					else:
 						# Send an error response if the message type is not supported
 						response = Response(success=False, message= "Unexpected message type")
-						stub.Send(response)
+						self.message_queue[clientsocket].put(response)
 		
 		except (ConnectionResetError, BrokenPipeError):
 			# Print a message if the client disconnects unexpectedly
@@ -106,6 +123,8 @@ class Server:
 			# Remove the client from the list of authenticated users if it was authenticated
 			if username in self.authenticated_users:
 				self.authenticated_users[username].remove(clientsocket)
+			
+			del self.message_queue[clientsocket]
 
 
 				
@@ -129,13 +148,13 @@ class Server:
 
 				# Send a successful response message
 				response = Response(success=True, message= "Login Successful")
-				stub.Send(response)
+				self.message_queue[clientsocket].put(response)
 
 				return loginreq.username
 			except Exception as e:
 				# Send an error response message
 				response = Response(success=False, message= str(e))
-				stub.Send(response)
+				self.message_queue[clientsocket].put(response)
 
 				return None
 
@@ -150,37 +169,43 @@ class Server:
 
 				# Send a successful response message
 				response = Response(success=True, message= "Registration Successful")
-				stub.Send(response)
+				self.message_queue[clientsocket].put(response)
 
 				return registerreq.username
 			except Exception as e:
 				# Send an error response message
 				response = Response(success=False, message= str(e))
-				stub.Send(response)
+				self.message_queue[clientsocket].put(response)
 
 				return None
 
 		else:
 			# Send an error response message
 			response = Response(success=False, message= "Unknown request sent; Authentication denied")
-			stub.Send(response)
+			self.message_queue[clientsocket].put(response)
 
 			return None
 
 		
-	def send_message(self, message_type: int, payload: bytes, stub: Stub) -> None:
+	def send_message(self, message_type: int, payload: bytes, clientsocket: socket) -> None:
 		try:
 			# Parse the SendMessageRequest
-			send_message_req: SendMessageRequest = stub.Parse(message_type, payload)
+			send_message_req: SendMessageRequest = Stub(clientsocket).Parse(message_type, payload)
+
+			# Error if sending to user that doesn't exist:
+			if send_message_req.recipient not in self.db.get_users():
+				error = Error(message = "Recipient user does not exist!")
+				self.message_queue[clientsocket].put(error)
+				return
+			
 
 			# Check if the recipient is authenticated
 			if send_message_req.recipient in self.authenticated_users:
 				# Iterate over all the sockets belonging to the recipient
-				for socket in self.authenticated_users[send_message_req.recipient]:
-					temp_stub = Stub(socket)
+				for other_socket in self.authenticated_users[send_message_req.recipient]:
 					# Create a response for each socket with the sender and content of the message
 					single_message = SingleMessageResponse(sender=send_message_req.sender, content=send_message_req.content)
-					temp_stub.Send(single_message)
+					self.message_queue[other_socket].put(single_message)
 			else:
 				# If recipient is not authenticated, save the message to the database
 				self.db.save_message(sender=send_message_req.sender, recipient=send_message_req.recipient, content=send_message_req.content)
@@ -188,15 +213,15 @@ class Server:
 			response = Response(success=True, message="Single message sent")
 
 		except:
-			response = SingleMessageResponse(sender=False, content="Error sending message")
+			response = Response(success=False, message="Error sending message")
 
 		# Send response back to the client
-		stub.Send(response)
+		self.message_queue[clientsocket].put(response)
 
 
-	def get_users(self, message_type: int, payload: bytes, stub: Stub) -> None:
+	def get_users(self, message_type: int, payload: bytes, clientsocket: socket) -> None:
 		# Parse the GetUsersRequest
-		get_users_req: GetUsersRequest = stub.Parse(message_type, payload)
+		get_users_req: GetUsersRequest = Stub(clientsocket).Parse(message_type, payload)
 
 		# Get the list of all users from the database
 		users = self.db.get_users()
@@ -209,12 +234,13 @@ class Server:
 			response.append(UsersStreamResponse(username=username))
 
 		# Send the response back to the client as a stream
-		stub.SendStream(response)
+		self.message_queue[clientsocket].put(response)
 
 
-	def delete_user(self, message_type: int, payload: bytes, stub: Stub) -> None:
+	def delete_user(self, message_type: int, payload: bytes, clientsocket: socket) -> None:
+
 		# Parse the DeleteUserRequest
-		delete_user_req: DeleteUserRequest = stub.Parse(message_type, payload)
+		delete_user_req: DeleteUserRequest = Stub(clientsocket).Parse(message_type, payload)
 
 		try:
 			# Delete the user from the database
@@ -222,21 +248,19 @@ class Server:
 		except:
 			# If user does not exist in the database, send error message to client
 			response = Response(success=False, message="User does not exist")
-			stub.Send(response)
+			self.message_queue[clientsocket].put(response)
+			return
 
-		# Inform all sockets belonging to the deleted user that the account has been deleted
-		for socket in self.authenticated_users[delete_user_req.username]:
-			temp_stub = Stub(socket)
-			response = Response(success=True, message="Account deleted")
-			temp_stub.Send(response)
-
-		# TODO: tell all users that a user is gone
-
+		# Inform all sockets that an account has been deleted
+		for user in self.authenticated_users:
+			for other_socket in self.authenticated_users[user]:
+				response = DeleteUserResponse(username=delete_user_req.username)
+				self.message_queue[other_socket].put(response)
 		
 
-	def get_messages(self, message_type: int, payload: bytes, stub: Stub) -> None:
+	def get_messages(self, message_type: int, payload: bytes, clientsocket: socket) -> None:
 		# Parse the GetMessagesRequest object from the given payload
-		get_messages_req : GetMessagesRequest = stub.Parse(message_type, payload)
+		get_messages_req : GetMessagesRequest = Stub(clientsocket).Parse(message_type, payload)
 
 		# Retrieve the messages for the specified user from the database
 		messages = self.db.get_messages(get_messages_req.username)
@@ -247,7 +271,7 @@ class Server:
 			response.append(MessagesStreamResponse(sender=sender, content=content))
 
 		# Send the list of MessagesStreamResponse objects to the client
-		stub.SendStream(response)
+		self.message_queue[clientsocket].put(response)
 
 if __name__ == "__main__":
     # Create a Server instance

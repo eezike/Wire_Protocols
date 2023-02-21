@@ -5,21 +5,34 @@ from backend.client import Client
 class Application(tk.Tk):
     def __init__(self):
         tk.Tk.__init__(self)
+        # Initialize instance variables
         self._frame = None
-        self.switch_frame(ConnectPage)
-        self.title("Chatroom")
-        self.geometry("850x300")
         self.client : Client = Client()
 
-    def switch_frame(self, frame_class):
-        new_frame = frame_class(self)
-        if self._frame is not None:
-            self._frame.destroy()
-        self._frame = new_frame
-        self._frame.pack()
+        # Set title and window size
+        self.title("Chatroom")
+        self.geometry("850x300")
+        
+        # Switch to the ConnectPage
+        self.switch_frame(ConnectPage)
+
+# Function to switch to a new frame
+def switch_frame(self, frame_class):
+    # Create a new frame instance
+    new_frame = frame_class(self)
+    
+    # Destroy the old frame if it exists
+    if self._frame is not None:
+        self._frame.destroy()
+
+    # Set the new frame as the current frame and pack it
+    self._frame = new_frame
+    self._frame.pack()
 
 def run():
+    # Create an instance of Application and start the mainloop
     app = Application()
     app.mainloop()
 
-run()
+if __name__ == "__main__":
+    run()

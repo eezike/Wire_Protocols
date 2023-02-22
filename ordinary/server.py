@@ -2,8 +2,7 @@
 import socket
 import threading
 import backend.database as database
-from backend.service_classes import VERSION, HEADER_FORMAT, MESSAGE_TYPES, Message, SendMessageRequest, Response, GetUsersRequest, UsersStreamResponse, MessagesStreamResponse, LoginRequest, RegisterRequest, DeleteUserRequest, StreamEnd, Error, GetMessagesRequest, SingleMessageResponse, DeleteUserResponse, AddUserResponse
-from backend.service import Stub
+from backend.service import Stub, MESSAGE_TYPES, SendMessageRequest, Response, GetUsersRequest, UsersStreamResponse, MessagesStreamResponse, LoginRequest, RegisterRequest, DeleteUserRequest, Error, GetMessagesRequest, SingleMessageResponse, DeleteUserResponse, AddUserResponse
 from collections import defaultdict
 import queue
 
@@ -32,7 +31,7 @@ class Server:
 		# initialize the sql database with the server
 		self.db = database.Database(dbname)
 
-		# dict that tracks an authenticated user to their associated client sockets: (username : str) -> (list[clientsocket : socket])
+		# dict that tracks an authenticated user to their associated client socket: (username : str) -> (clientsocket : socket)
 		self.authenticated_users = dict()
 
 		# The max amount of users the server will accept
@@ -42,14 +41,17 @@ class Server:
 		self.message_queue = defaultdict(queue.Queue)
 
 	def send_in_queue(self, socket : socket):
+		# Loop while the socket is still active
 		while socket:
+			# Get the next message from the queue
 			message = self.message_queue[socket].get()
+			# Check if the message is a list, indicating a stream of messages, then send
 			if type(message) is list:
 				Stub(socket).SendStream(message)
 			else:
 				Stub(socket).Send(message)
+			# Mark the message as done in the queue
 			self.message_queue[socket].task_done()
-
 	
 	def run(self):
 
@@ -92,7 +94,7 @@ class Server:
 			response = Response(success=True, message= "Welcome to the chat service!")
 			self.message_queue[clientsocket].put(response)
 
-			# start a new thread to handle the client connection
+			# start a new thread to handle the orderly client message sending
 			threading.Thread(target = self.send_in_queue, args = (clientsocket,), daemon= True).start()
 
 			# Loop forever
@@ -115,12 +117,12 @@ class Server:
 						message_type_to_function[message_type](message_type, payload, clientsocket)
 					else:
 						# Send an error response if the message type is not supported
-						response = Response(success=False, message= "Unexpected message type")
+						response = Error(message= "Unexpected message type")
 						self.message_queue[clientsocket].put(response)
 		
 		except (ConnectionResetError, BrokenPipeError):
-			# Print a message if the client disconnects unexpectedly
 			if not self.SILENT:
+				# Print a message if the client disconnects unexpectedly
 				print(addr[0] + ' disconnected unexpectedly')
 		finally:
 			# Close the client socket
@@ -130,6 +132,7 @@ class Server:
 			if username in self.authenticated_users:
 				del self.authenticated_users[username]
 			
+			# End client's message queue
 			del self.message_queue[clientsocket]
 
 
@@ -148,8 +151,13 @@ class Server:
 			try:
 				# Try to login the user and add the clientsocket to authenticated_users dictionary
 				loginreq : LoginRequest = stub.Parse(message_type, payload)
-				self.db.login(loginreq.username, loginreq.password)
 
+				if loginreq.username in self.authenticated_users:
+					response = Response(success=False, message= "User already logged in")
+					self.message_queue[clientsocket].put(response)
+					return None
+
+				self.db.login(loginreq.username, loginreq.password)
 				self.authenticated_users[loginreq.username] = clientsocket
 
 				# Send a successful response message
@@ -167,7 +175,7 @@ class Server:
 		elif message_type == MESSAGE_TYPES.RegisterRequest:
 			# If message is a RegisterRequest
 			try:
-				# Try to register the user and add the clientsocket to authenticated_users dictionary
+				# Try to register the user
 				registerreq : RegisterRequest = stub.Parse(message_type, payload)
 				self.db.register(registerreq.username, registerreq.password)
 				
@@ -176,10 +184,12 @@ class Server:
 				response = Response(success=True, message= "Registration Successful")
 				self.message_queue[clientsocket].put(response)
 
+				# inform logged in users about newly added user
 				for other_socket in self.authenticated_users.values():
 					response = AddUserResponse(username=registerreq.username)
 					self.message_queue[other_socket].put(response)
 				
+				# add the clientsocket to authenticated_users dictionary
 				self.authenticated_users[registerreq.username] = clientsocket
 
 				return registerreq.username
@@ -212,7 +222,7 @@ class Server:
 
 			# Check if the recipient is authenticated
 			if send_message_req.recipient in self.authenticated_users:
-				# Iterate over all the sockets belonging to the recipient
+				# get socket belonging to the recipient
 				other_socket = self.authenticated_users[send_message_req.recipient]
 				# Create a response for each socket with the sender and content of the message
 				single_message = SingleMessageResponse(sender=send_message_req.sender, content=send_message_req.content)

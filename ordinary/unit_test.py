@@ -11,17 +11,21 @@ import threading
 class UnitTester:
 
     def __init__(self, db_filename = "test.db") -> None:
+        # init db and servert
         self.db_filename = db_filename
         self.server = Server(dbname= self.db_filename, silent = True)
         self.PORT = self.server.PORT
         self.HOST = self.server.HOST
     
+    # clear db for testing
     def reset_database(self):
         self.server.db.clear()
     
+    # start ther server
     def run_server(self):
         self.server.run()
     
+    # creating clients and connecting them to server
     def create_client(self):
         c = Client()
         c.connect(self.HOST, self.PORT)
@@ -31,21 +35,22 @@ class UnitTester:
     Testing authentication services.
     """
 
-    def test_register_good(self, username, password, assert_message = "test_register_good: expected sucessful registration"):
+    # login correctly
+    def test_register_good(self, username: str, password: str, assert_message: str = "test_register_good: expected sucessful registration"):
         c1 = self.create_client()
         response = c1.register(username, password)
         assert response.success == True, assert_message
 
         return c1
     
-    def test_login_good(self, username, password, assert_message = "test_login_good: expected sucessful login"):
+    def test_login_good(self, username: str, password: str, assert_message: str = "test_login_good: expected sucessful login"):
         c1 = self.create_client()
         response = c1.login(username, password)
         assert response.success == True, assert_message
 
         return c1
 
-    def test_bad_login(self, multiple = 1):
+    def test_bad_login(self, multiple: int = 1):
         # Case 1: Responds with failure for unregistered user
         self.reset_database()
         for i in range(multiple):
@@ -78,15 +83,21 @@ class UnitTester:
         response = c2.login("test1", "wrong")
         assert response.success == False,  f"test_register_good_and_login_bad_and_login_good: expected failed login on wrong password"
 
-        # Case 2: user exists wrong password
+        # Case 3: user exists right password
         self.test_login_good("test1", "12345", f"test_register_good_and_login_bad_and_login_good: expected successful login")
 
+    # Testing the delete account feature
     def test_delete(self):
         self.reset_database()
+
+        # constants
         username = "test1"
         password = "12345"
+
+        # create an account
         c1 = self.test_register_good(username, password, f"test_delete: expected sucessful registration")
 
+        # delete it
         c1.delete_account()
         message_type, response = c1.listen_for_updates()
 
@@ -108,35 +119,43 @@ class UnitTester:
 
         c1 = self.create_client()
         response = c1.login(username, password)
-        # Failed login on delted user
+
+        # Failed login on deleted user
         assert response.success == False,  f"test_delete: expected login error for deleted user"
 
     """
     Testing chat services
     """
+    # get user's stored messages
     def test_get_inbox(self, multiple = 1):
         self.reset_database()
 
+        # Set up the user's credentials and message content
         username = "test"
         password = "12345"
         content = "Hello, world!"
 
+        # Register the user and close the connection
         c1 = self.test_register_good(username, password, "test_get_inbox: expected successful registration 0")
         c1.close()
 
-
+        # For each value in a specified range, register a new user and send them a message
         for i in range(multiple):
             c = self.test_register_good(f"test{i}", "blah", f"test_get_inbox: expected successful registration {i + 1}")
             c.send_message(username, content)
 
+        # Log in to the user account and retrieve messages
         c1 =  self.test_login_good(username, password, "test_get_inbox: expected successful login")
         response = c1.get_messages()
 
+        # Assert that the number of retrieved messages matches the expected number
         assert len(response) == multiple, f"test_get_inbox: expected to have {multiple} messages, found {len(response)}"
 
+        # If messages were retrieved, assert that the first message is from the expected sender and contains the expected content
         if len(response) > 0:
             assert response[0].sender == "test0", f"test_get_inbox: expected to have first message from sender test0"
             assert response[0].content == content, f"test_get_inbox: expected message to be: {content}"
+
 
 
     def test_get_users(self, multiple = 1):
@@ -217,10 +236,11 @@ class UnitTester:
         user0, user1 = "test0", "test1"
         msg0, msg1 = "foo", "bar"
 
+        # log both users in
         c0 = self.test_login_good(user0, "12345", f"test_concurrent_messaging: expected successful login 0")
         c1 = self.test_login_good(user1, "12345", f"test_concurrent_messaging: expected successful login 1")
 
-
+        # send messages
         c0.send_message(user1, msg0)
         c1.send_message(user0, msg1)
 

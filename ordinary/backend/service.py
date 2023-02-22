@@ -34,7 +34,7 @@ class Stub:
         }
 
     # Define a method to send a message to the socket
-    def Send(self, payload: Message, recieve = True) -> Message:
+    def Send(self, payload: Message, recieve = True) -> any:
         # Convert the payload message to binary format
         binary_payload = payload.pack()
         # Send the binary payload to the socket
@@ -46,7 +46,7 @@ class Stub:
             return self.Parse(message_type, payload)
     
     # Define a method to send a message stream to the socket
-    def SendStream(self, payload_iterator: list[Message], recieve = False) -> Message:
+    def SendStream(self, payload_iterator: list[Message]) -> Message:
         binary_payload = bytes()
         # Convert each message in the payload iterator to binary format and concatenate them
         for req in payload_iterator:
@@ -70,7 +70,7 @@ class Stub:
         # Unpack the header data to get the message version, type, and payload size
         version, message_type, payload_size = struct.unpack(HEADER_FORMAT, header)
 
-        # If the version is incorrect, rais an exception
+        # If the version is incorrect, raise an exception
         if version != VERSION:
             raise Exception("Error: incorrect version #" + str(version))
         
@@ -113,6 +113,6 @@ class Stub:
             res = res + self.ParseStream(message_type)
         else:
             # If the message type is unknown, return a Error with a message indicating that the message type is unknown
-            res = Error(message= "Unknown message type")
+            res = Error(message= "Cannot patse unknown message type")
 
         return res

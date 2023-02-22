@@ -21,7 +21,9 @@ class Application(tk.Tk):
     # Function to switch to a new frame
     def switch_frame(self, frame_class_index : int):
 
+        # choose frame class by index
         frame_class = [ConnectPage, LoginPage, HomePage][frame_class_index]
+
         # Create a new frame instance
         new_frame = frame_class(self)
         

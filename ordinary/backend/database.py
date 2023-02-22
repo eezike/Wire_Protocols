@@ -2,10 +2,10 @@ import sqlite3
 from contextlib import closing
 
 class Database:
-    def __init__(self, name="chatroom.db"):
+    def __init__(self, name: str ="./backend/chatroom.db"):
         # If no database name is provided, use the default name
         if name == None:
-            name = "chatroom.db"
+            name = "./backend/chatroom.db"
 
         # Connect to the database
         self.conn = sqlite3.connect(name, check_same_thread=False)
@@ -54,7 +54,7 @@ class Database:
             cursor.execute("DELETE FROM Messages WHERE id = ?", (msg_id,))
             self.conn.commit()
 
-    def get_messages(self, username: str):
+    def get_messages(self, username: str) -> list[tuple[str, str]]:
         with closing(self.conn.cursor()) as cursor:
             # Get messages from the Messages table based on the recipient's username
             res = cursor.execute("SELECT id, sender, message FROM Messages WHERE recipient = ?", (username,)).fetchall()
@@ -73,7 +73,7 @@ class Database:
 
             return [name for (name,) in res]
 
-    def delete_user(self, username: str):
+    def delete_user(self, username: str) -> None:
         with closing(self.conn.cursor()) as cursor:
             # Check if the user exists in the Users table
             res = cursor.execute("SELECT username FROM Users WHERE username = ?", (username,)).fetchall()
@@ -87,7 +87,7 @@ class Database:
             # Delete messages addressed to that user as well upon deletion
             cursor.execute("DELETE FROM Messages WHERE sender = ?", (username,))
     
-    def clear(self):
+    def clear(self) -> bool:
         # Delete db
         with closing(self.conn.cursor()) as cursor:
             cursor.execute('DELETE FROM Users')

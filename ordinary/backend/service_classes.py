@@ -9,7 +9,7 @@ and how to pack and unpack them into bytes.
 
 # Define the version number and header format for the message protocol
 VERSION = 2
-HEADER_FORMAT = "!iii"
+HEADER_FORMAT = "!iii" # version number, message type, payload size
 
 # Define the different types of messages that can be sent
 class MESSAGE_TYPES():

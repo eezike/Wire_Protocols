@@ -1,11 +1,5 @@
-# dhcp-10-250-150-39.harvard.edu
-# DESKTOP-EUAUCFM
-# Victor: 10.250.235.165
-# Emeka: 10.250.150.39
-# Python program to implement client side of chat room.
 import socket
-from backend.service_classes import VERSION, HEADER_FORMAT, MESSAGE_TYPES, Message, SendMessageRequest, Response, GetUsersRequest, UsersStreamResponse, MessagesStreamResponse, LoginRequest, RegisterRequest, DeleteUserRequest, StreamEnd, Error, GetMessagesRequest, SingleMessageResponse
-from backend.service import Stub
+from backend.service import Stub, Message, SendMessageRequest, Response, GetUsersRequest, UsersStreamResponse, MessagesStreamResponse, LoginRequest, RegisterRequest, DeleteUserRequest, GetMessagesRequest
 
 
 # Define the Client class
@@ -13,17 +7,22 @@ class Client:
     
     # Initialize the class and set some default properties
     def __init__(self):
-        self.clientsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.connected = False
         self.username = None
-        self.stub = Stub(self.clientsocket, client = True)
     
     # Connect to the specified host and port
-    def connect(self, host="10.228.185.36", port=9999):
+    def connect(self, host: str, port: int) -> bool:
         # If not already connected, try to connect
         if not self.connected:
             try:
+                # Establish client socket and connect
+                self.clientsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 self.clientsocket.connect((host, port))
+
+                # Establish stub
+                self.stub = Stub(self.clientsocket, client = True)
+
+
                 # Receive a response from the server and parse it
                 message_type, payload = self.stub.Recv()
                 response : Response = self.stub.Parse(message_type, payload)
@@ -32,35 +31,35 @@ class Client:
                 if response.success:
                     self.connected = True
             except:
-                pass
+                self.clientsocket.close()
         
         # Return the value of connected
         return self.connected
     
     # Log in to the chat server with the specified username and password
-    def login(self, username, password) -> Response:
+    def login(self, username: str, password: str) -> Response:
         # Create a LoginRequest object with the specified username and password
         request = LoginRequest(username= username, password= password)
         # Send the request to the server and parse the response
         response : Response = self.stub.Send(request)
         # Set the value of the username property
-        self.username = username
+        self.username = username if response.success else None
         # Return the response
         return response
     
     # Register a new account with the specified username and password
-    def register(self, username, password) -> Response:
+    def register(self, username: str, password: str) -> Response:
         # Create a RegisterRequest object with the specified username and password
         request = RegisterRequest(username= username, password= password)
         # Send the request to the server and parse the response
         response : Response = self.stub.Send(request)
         # Set the value of the username property
-        self.username = username
+        self.username = username if response.success else None
         # Return the response
         return response
     
     # Send a message to the specified recipient with the specified content
-    def send_message(self, recipient, content) -> None:
+    def send_message(self, recipient: str, content: str) -> None:
         # Create a SendMessageRequest object with the sender username, recipient username, and message content
         request = SendMessageRequest(sender= self.username, recipient= recipient, content= content)
         # Send the request to the server
@@ -91,14 +90,15 @@ class Client:
         self.stub.Send(request, recieve= False)
 
         
-    def listen_for_updates(self):
-        # receive a message from the server
+    def listen_for_updates(self) -> tuple[int, Message]:
+        # receive and parse message from the server
         message_type, payload = self.stub.Recv()
         response = self.stub.Parse(message_type, payload)
 
         return message_type, response
     
     def close(self):
+        # close the connection
         self.connected = False
         self.username = None
         self.clientsocket.close()

@@ -1,7 +1,6 @@
 import tkinter as tk
 from tkinter import messagebox
-from frontend.homepage import HomePage
-from backend.service_classes import Response
+from backend.service import Response
 
 class LoginPage(tk.Frame):
     def __init__(self, master):
@@ -72,8 +71,8 @@ class LoginPage(tk.Frame):
             
     def register(self):
         # Get username and password from entry fields
-        username = self.username_entry.get()
-        password = self.password_entry.get()
+        username = self.username_entry.get().strip()
+        password = self.password_entry.get().strip()
 
         # Check if username and password are not empty
         if len(username) == 0 or len(password) == 0:

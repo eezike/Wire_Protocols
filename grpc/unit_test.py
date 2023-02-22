@@ -61,13 +61,12 @@ class UnitTester:
         response = self.auth_stub.Login(request)
         assert response.success, "Test login: auth stub error"
 
-    def test_login_errors(self):
-        # Case 1: user does not exist in db
+        # Error 1: user does not exist in db
         request = chat_service_pb2.LoginRequest(username="fail", password=self.password)
         response = self.auth_stub.Login(request)
         assert not response.success, "Test login error: auth stub was successful, expected error in user"
 
-        # Case 2: user exists wrong password
+        # Error 2: user exists wrong password
         request = chat_service_pb2.LoginRequest(username=self.username1, password="fail")
         response = self.auth_stub.Login(request)
         assert not response.success, "Test login error: auth stub was successful, expected error in password"
@@ -86,7 +85,6 @@ class UnitTester:
         except:
             assert False, "Test register: db file does not exist"
 
-    def test_register_errors(self):
         # Check user1 already in db
         request = chat_service_pb2.RegisterRequest(username=self.username1, password=self.password)
         response = self.auth_stub.Register(request)
@@ -116,22 +114,12 @@ class UnitTester:
     """
     def test_messages(self):
         pass
-
-    def test_messages_error(self):
-        pass
     
     def test_get_users(self):
         # Get a list of usernamers from the chat_stub
         userObjs = self.chat_stub.GetUsers(chat_service_pb2.Empty()) 
         users = [userObj.username for userObj in userObjs]
         assert sorted(users) == sorted([self.username1, self.username2]), "Test get users: non-matching user lists"
-
-    # client/server integration with protobufs
-    def test_client(self):
-        pass
-
-    def test_server(self):
-        pass
         
     def run_tests(self):
         self.test_register(self.username1, self.password)
@@ -145,8 +133,6 @@ class UnitTester:
         self.test_get_users()
         self.test_delete()
         self.test_delete()
-        self.test_client()
-        self.test_server()
 
 if __name__ == '__main__':
     threading.Thread(target = serve).start()

@@ -59,9 +59,8 @@ class UnitTester:
 
 
 
-    def test_register(self):
+    def test_register(self, username, password):
         # Ensure stub responds with success
-        username, password = "testing", "12345"
         request = chat_service_pb2.RegisterRequest(username=username, password=password)
         response = self.auth_stub.Register(request)
         print(response)
@@ -95,7 +94,8 @@ class UnitTester:
         pass
         
     def run_tests(self):
-        self.test_register()
+        self.test_register(self.username1, self.password)
+        self.test_register(self.username2, self.password)
         self.test_login()
         self.test_delete()
         self.test_messages()

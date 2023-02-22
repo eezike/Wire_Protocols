@@ -26,6 +26,7 @@ class Server:
         self.server.add_insecure_port(self.HOST + ':' + self.PORT)
         self.server.start()
         print("Server initialized at " + self.HOST)
+        print("Port: " + self.PORT)
         self.server.wait_for_termination()
         
 class AuthServiceServicer(chat_service_pb2_grpc.AuthServiceServicer):

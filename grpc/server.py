@@ -2,40 +2,32 @@ import grpc
 from concurrent import futures
 import backend.chat_service_pb2 as chat_service_pb2
 import backend.chat_service_pb2_grpc as chat_service_pb2_grpc
-from collections import defaultdict
-import pickle
 import socket
+from backend.database import Database
 
+db = Database()
+db.loadData()
 
-HOST = socket.gethostbyname(socket.gethostname())
-PORT = '50051'
-MAX_CLIENTS = 10
+class Server:
+    def __init__(self):
+        self.HOST = socket.gethostbyname(socket.gethostname())
+        self.PORT = '50051'
+        self.MAX_CLIENTS = 10
+        self.server = None
 
-def storeData(db):
-    """
-    It opens db.pkl file in write binary mode, and then dumps our db to the file.
-    """
-    with open('./backend/db.pkl', 'wb') as dbfile:
-        pickle.dump(db, dbfile)
-
-def loadData():
-    """
-    Load the dictionary from the db.pkl file if it exists, otherwise create it.
-
-    Return a dictionary with two keys, "passwords" and "messages".
-    """
-    try:
-        with open('./backend/db.pkl', 'rb')  as dbfile:
-            db = pickle.load(dbfile)
-    except:
-        db = {
-            "passwords" : dict(),
-            "messages": defaultdict(list)
-        }
-    return db
-
-db = loadData()
-
+    def serve(self):
+        """
+        Starts the gRPC server with both Chat and Auth servicers, with a cap
+        for the amount of clients it can hold, at a PORT. 
+        """
+        self.server = grpc.server(futures.ThreadPoolExecutor(max_workers=self.MAX_CLIENTS))
+        chat_service_pb2_grpc.add_AuthServiceServicer_to_server(AuthServiceServicer(), self.server)
+        chat_service_pb2_grpc.add_ChatServiceServicer_to_server(ChatServiceServicer(), self.server)
+        self.server.add_insecure_port(self.HOST + ':' + self.PORT)
+        self.server.start()
+        print("Server initialized at " + self.HOST)
+        self.server.wait_for_termination()
+        
 class AuthServiceServicer(chat_service_pb2_grpc.AuthServiceServicer):
     """
     Define a gRPC service implementation class that inherits Auth service stub definition.
@@ -54,7 +46,7 @@ class AuthServiceServicer(chat_service_pb2_grpc.AuthServiceServicer):
         password = request.password 
 
         # Check whether the username and password match a registered user in the database
-        if username in db["passwords"] and password == db["passwords"][username]:
+        if username in db.get_db()["passwords"] and password == db.get_db()["passwords"][username]:
             
             # Send response success
             response = chat_service_pb2.LoginResponse(success=True, message='Login successful')
@@ -76,11 +68,11 @@ class AuthServiceServicer(chat_service_pb2_grpc.AuthServiceServicer):
         password = request.password
 
         # Check whether the username is already taken in the database
-        if username not in db["passwords"]:
+        if username not in db.get_db()["passwords"]:
 
             # Add the username and password to the database and save the db
-            db["passwords"][username] = password
-            storeData(db)
+            db.get_db()["passwords"][username] = password
+            db.storeData()
 
             # Send response success
             response = chat_service_pb2.RegisterResponse(success=True, message='Register successful')
@@ -100,10 +92,10 @@ class AuthServiceServicer(chat_service_pb2_grpc.AuthServiceServicer):
         if username in db["passwords"]:
 
             # Delete the account, and the messages associated with it. 
-            del db["passwords"][username]
-            del db["messages"][username]
+            del db.get_db()["passwords"][username]
+            del db.get_db()["messages"][username]
 
-            storeData(db) # Save the db
+            db.storeData() # Save the db
 
             # Send deletion response success
             response = chat_service_pb2.DeleteResponse(success=True, message='Account deleted')
@@ -129,12 +121,12 @@ class ChatServiceServicer(chat_service_pb2_grpc.ChatServiceServicer):
         content = request.content
 
         # Return error code for invalid recipient/senders
-        if sender not in db["passwords"] or recipient not in db["passwords"]:
+        if sender not in db.get_db()["passwords"] or recipient not in db.get_db()["passwords"]:
             return chat_service_pb2.SendResponse(success = False, message = "Invalid sender or recipient")
 
         # Store message in db and return success code
         print(f"Received message from {sender} to {recipient}: {content}")
-        db["messages"][recipient].append(request)
+        db.get_db()["messages"][recipient].append(request)
         
         return chat_service_pb2.SendResponse(success = True, message = "Message sent")
 
@@ -142,7 +134,7 @@ class ChatServiceServicer(chat_service_pb2_grpc.ChatServiceServicer):
         """
         Return the current users in the database.
         """
-        for user in db["passwords"]:
+        for user in db.get_db()["passwords"]:
             yield chat_service_pb2.User(username = user)
     
     def ReceiveMessage(self, request, context):
@@ -154,23 +146,11 @@ class ChatServiceServicer(chat_service_pb2_grpc.ChatServiceServicer):
         # Retrieve all messages made to a recipient, deleting as we go. 
         # Loop in reverse order to maintain order messages were received.
         for i in range(len(db["messages"][recipient]) - 1, -1, -1): 
-            message = db["messages"][recipient][i]
+            message = db.get_db()["messages"][recipient][i]
             yield chat_service_pb2.ChatMessage(sender = message.sender, content = message.content)
-            db["messages"][recipient].pop()
-            storeData(db)
+            db.get_db()["messages"][recipient].pop()
+            db.storeData()
         
-def serve():
-    """
-    Starts the gRPC server with both Chat and Auth servicers, with a cap
-    for the amount of clients it can hold, at a PORT. 
-    """
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=MAX_CLIENTS))
-    chat_service_pb2_grpc.add_AuthServiceServicer_to_server(AuthServiceServicer(), server)
-    chat_service_pb2_grpc.add_ChatServiceServicer_to_server(ChatServiceServicer(), server)
-    server.add_insecure_port(HOST + ':' + PORT)
-    server.start()
-    print("Server initialized at " + HOST)
-    server.wait_for_termination()
-
 if __name__ == '__main__':
-    serve()
+    server = Server()
+    server.serve()

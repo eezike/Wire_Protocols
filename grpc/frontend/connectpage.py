@@ -29,7 +29,6 @@ class ConnectPage(tk.Frame):
         self.connect_button = tk.Button(self, text="Connect", font=("TkDefaultFont", 14), command=self.connect)
         self.connect_button.grid(row=2, column=0, pady=10, padx=10, sticky="W")
 
-
     def connect(self):
         """
         Retreives host and port from frame and tries to connect server to server.

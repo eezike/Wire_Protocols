@@ -113,6 +113,6 @@ class HomePage(tk.Frame):
 
     def recipient_selected(self, *args):
         """
-        Function needed for dropdown documentation
+        Function needed for dropdown specifications
         """
         pass

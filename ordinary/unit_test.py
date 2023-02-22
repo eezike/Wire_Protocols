@@ -11,7 +11,7 @@ import threading
 class UnitTester:
 
     def __init__(self, db_filename = "test.db") -> None:
-        # init db and servert
+        # init db and server
         self.db_filename = db_filename
         self.server = Server(dbname= self.db_filename, silent = True)
         self.PORT = self.server.PORT

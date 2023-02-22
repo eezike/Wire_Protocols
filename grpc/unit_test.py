@@ -54,13 +54,14 @@ class UnitTester:
     """
     Testing authentication services.
     """
-    def test_login(self):
-        pass
-
-
+    def test_login(self, username, password):
+        # Ensure auth stub responds with success for login
+        request = chat_service_pb2.LoginRequest(username=username, password=password)
+        response = self.auth_stub.Login(request)
+        assert response.success, "Test login: auth stub error"
 
     def test_register(self, username, password):
-        # Ensure stub responds with success
+        # Ensure stub responds with success for register
         request = chat_service_pb2.RegisterRequest(username=username, password=password)
         response = self.auth_stub.Register(request)
         print(response)
@@ -84,7 +85,9 @@ class UnitTester:
         pass
     
     def test_get_users(self):
-        pass
+        userObjs = self.chat_stub.GetUsers(chat_service_pb2.Empty()) 
+        users = [userObj.username for userObj in userObjs]
+        assert users == [self.username1, self.username2], 
 
     # client/server integration with protobufs
     def test_client(self):
@@ -96,10 +99,13 @@ class UnitTester:
     def run_tests(self):
         self.test_register(self.username1, self.password)
         self.test_register(self.username2, self.password)
-        self.test_login()
+        self.test_login(self.username1, self.password)
+        self.test_login(self.username2, self.password)
         self.test_delete()
         self.test_messages()
         self.test_get_users()
+        self.test_delete()
+        self.test_delete()
         self.test_client()
         self.test_server()
 

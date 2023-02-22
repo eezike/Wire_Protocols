@@ -89,7 +89,7 @@ class AuthServiceServicer(chat_service_pb2_grpc.AuthServiceServicer):
         username = request.username
 
         # Check if the requested user to delete is in our database
-        if username in db["passwords"]:
+        if username in db.get_db()["passwords"]:
 
             # Delete the account, and the messages associated with it. 
             del db.get_db()["passwords"][username]
@@ -145,7 +145,7 @@ class ChatServiceServicer(chat_service_pb2_grpc.ChatServiceServicer):
 
         # Retrieve all messages made to a recipient, deleting as we go. 
         # Loop in reverse order to maintain order messages were received.
-        for i in range(len(db["messages"][recipient]) - 1, -1, -1): 
+        for i in range(len(db.get_db()["messages"][recipient]) - 1, -1, -1): 
             message = db.get_db()["messages"][recipient][i]
             yield chat_service_pb2.ChatMessage(sender = message.sender, content = message.content)
             db.get_db()["messages"][recipient].pop()

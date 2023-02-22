@@ -1,11 +1,10 @@
-import unittest
 import grpc
 from concurrent import futures
-import chat_service_pb2 as chat_service_pb2 
-import chat_service_pb2_grpc as chat_service_pb2_grpc
+import backend.chat_service_pb2 as chat_service_pb2 
+import backend.chat_service_pb2_grpc as chat_service_pb2_grpc
 from server import Server, AuthServiceServicer, ChatServiceServicer
-import client
-from database import Database
+import backend.client
+from backend.database import Database
 import os
 from os.path import exists
 import time
@@ -30,12 +29,13 @@ def connect():
     return auth_stub, chat_stub
 
 def init_database():
-    if exists('./db.pkl'):
-        os.remove('./db.pkl')
+    db_filename = './backend/db.pkl'
+    if exists(db_filename):
+        os.remove(db_filename)
         print('Old database removed')
         time.sleep(1)
 
-    db = Database()
+    db = Database(db_filename)
     db.loadData()
     db.storeData()
     print("New database created")
@@ -61,10 +61,10 @@ class UnitTester:
         username, password = "testing", "12345"
         request = chat_service_pb2.RegisterRequest(username=username, password=password)
         response = self.auth_stub.Register(request)
-        assert(response.success, "Test register: auth stub error")
+        assert response.success, "Test register: auth stub error"
 
         # Double check database
-        assert(username in db.get_db()["passwords"], "Test register: created user not in db")
+        assert username in db.get_db()["passwords"], "Test register: created user not in db"
 
     def test_delete(self):
         pass

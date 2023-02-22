@@ -89,18 +89,25 @@ class HomePage(tk.Frame):
             if message_type == MESSAGE_TYPES.SingleMessageResponse:
                 self.add_message(response.sender, response.content, True)
             elif message_type == MESSAGE_TYPES.Response:
-                print(response)
+                # print(response)
+                pass
             elif message_type == MESSAGE_TYPES.Error:
                 messagebox.showerror("Error", response.message)
             elif message_type == MESSAGE_TYPES.AddUserResponse:
                 self.options.append(response.username)
+                self.dropdown.destroy()
+                self.dropdown = tk.OptionMenu(self, self.recipient, *self.options)
+                self.dropdown.grid(row=0, column=1, padx=10, pady=10)
             elif message_type == MESSAGE_TYPES.DeleteUserResponse:
-                if self.username == response.username:
+                if self.master.client.username == response.username:
                     self.master.client.username = ""
                     self.master.switch_frame(1)
                     break
                 else:
                     if response.username in self.options:
                         self.options.remove(response.username)
+                    self.dropdown.destroy()
+                    self.dropdown = tk.OptionMenu(self, self.recipient, *self.options)
+                    self.dropdown.grid(row=0, column=1, padx=10, pady=10)
             else:
                 messagebox.showerror("Error", "Unhandled message type")

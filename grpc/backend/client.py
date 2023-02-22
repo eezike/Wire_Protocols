@@ -44,14 +44,18 @@ class Client:
         request = chat_service_pb2.SendRequest(sender = self.username, recipient = recipient, content = content)
             
         # Send message to the server via stub
-        self.chat_stub.SendMessage(request)
+        response = self.chat_stub.SendMessage(request)
+
+        return response
 
     def get_users(self):
         """
         Returns a list of usernames currently stored with the server's database. 
         """
         userObjs = self.chat_stub.GetUsers(chat_service_pb2.Empty()) 
-        return [userObj.username for userObj in userObjs]
+        users = [userObj.username for userObj in userObjs]
+        users.remove(self.username)
+        return users
 
     def login(self, username, password):
         """

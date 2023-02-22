@@ -122,7 +122,7 @@ class ChatServiceServicer(chat_service_pb2_grpc.ChatServiceServicer):
 
         # Return error code for invalid recipient/senders
         if sender not in db.get_db()["passwords"] or recipient not in db.get_db()["passwords"]:
-            return chat_service_pb2.SendResponse(success = False, message = "Invalid sender or recipient")
+            return chat_service_pb2.SendResponse(success = False, message = "Invalid sender or recipient. Does the sender/recipient exist?")
 
         # Store message in db and return success code
         print(f"Received message from {sender} to {recipient}: {content}")

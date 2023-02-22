@@ -85,9 +85,10 @@ class UnitTester:
         pass
     
     def test_get_users(self):
+        # Get a list of usernamers from the chat_stub
         userObjs = self.chat_stub.GetUsers(chat_service_pb2.Empty()) 
         users = [userObj.username for userObj in userObjs]
-        assert users == [self.username1, self.username2], 
+        assert sorted(users) == sorted([self.username1, self.username2]), "Test get users: non-matching user lists"
 
     # client/server integration with protobufs
     def test_client(self):

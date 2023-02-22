@@ -18,6 +18,7 @@ class HomePage(tk.Frame):
 
         # Options menu w/out current user
         self.options = self.master.client.get_users()
+        self.options = self.options if self.options else [" "]
 
         # Current recipient in dropdown
         self.recipient = tk.StringVar()
@@ -61,8 +62,13 @@ class HomePage(tk.Frame):
             return
         
         # Send the message to the server and add it to our message list
-        self.master.client.send_message(self.recipient.get(), body)
-        self.add_message(self.recipient.get(), body)
+        response = self.master.client.send_message(self.recipient.get(), body)
+        
+        if response.success:
+            self.add_message(self.recipient.get(), body)
+        else:
+            messagebox.showerror("Message Send Failed", response.message)
+            self.reset_dropdown()
 
         # Reset text input
         self.message_input.delete("1.0", tk.END)
@@ -106,7 +112,10 @@ class HomePage(tk.Frame):
         Work-around to deal with people creating/deleting accounts once logged in.
         Avoids pub/subscribe method (which is the ideal).
         """
+        self.dropdown.destroy()
         self.options = self.master.client.get_users()
+        self.options = self.options if self.options else [" "]
+        self.recipient = tk.StringVar()
         self.dropdown = tk.OptionMenu(self, self.recipient, *self.options, command=self.recipient_selected)
         self.dropdown.grid(row=0, column=1, padx=10, pady=10)
         self.message_input.delete("1.0", tk.END)

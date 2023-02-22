@@ -5,7 +5,7 @@ import backend.chat_service_pb2_grpc as chat_service_pb2_grpc
 import socket
 from backend.database import Database
 
-db = Database()
+db = Database('./backend/db.pkl')
 db.loadData()
 
 class Server:

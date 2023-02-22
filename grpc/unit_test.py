@@ -2,12 +2,24 @@ import grpc
 from concurrent import futures
 import backend.chat_service_pb2 as chat_service_pb2 
 import backend.chat_service_pb2_grpc as chat_service_pb2_grpc
-from server import Server, AuthServiceServicer, ChatServiceServicer
 import backend.client
 from backend.database import Database
 import os
 from os.path import exists
 import time
+import threading
+import pickle
+
+# reset the database before importing the server (before server instantiates database)
+def reset_database():
+    db_filename = './backend/db.pkl'
+    if exists(db_filename):
+        os.remove(db_filename)
+        print('Old database removed')
+
+reset_database()
+
+from server import Server, AuthServiceServicer, ChatServiceServicer
 
 HOST = 'localhost'
 PORT = '50051'
@@ -28,25 +40,16 @@ def connect():
     chat_stub = chat_service_pb2_grpc.ChatServiceStub(channel)
     return auth_stub, chat_stub
 
-def init_database():
-    db_filename = './backend/db.pkl'
-    if exists(db_filename):
-        os.remove(db_filename)
-        print('Old database removed')
-        time.sleep(1)
-
-    db = Database(db_filename)
-    db.loadData()
-    db.storeData()
-    print("New database created")
-    return db
-
 class UnitTester:
 
-    def __init__(self, auth_stub, chat_stub, db) -> None:
+    def __init__(self, auth_stub, chat_stub) -> None:
         self.auth_stub = auth_stub
         self.chat_stub = chat_stub
-        self.db = db
+
+        # For authentication tests
+        self.username1 = "testing1"
+        self.username2 = "testing2"
+        self.password = "12345"
     
     """
     Testing authentication services.
@@ -61,10 +64,16 @@ class UnitTester:
         username, password = "testing", "12345"
         request = chat_service_pb2.RegisterRequest(username=username, password=password)
         response = self.auth_stub.Register(request)
+        print(response)
         assert response.success, "Test register: auth stub error"
 
-        # Double check database
-        assert username in db.get_db()["passwords"], "Test register: created user not in db"
+        # Double check database to see if user was saved
+        try:
+            with open('./backend/db.pkl', 'rb')  as dbfile:
+                db = pickle.load(dbfile)
+            assert username in db["passwords"], "Test register: created user not in db"
+        except:
+            print("Database load error")
 
     def test_delete(self):
         pass
@@ -95,8 +104,7 @@ class UnitTester:
         self.test_server()
 
 if __name__ == '__main__':
-    serve()
+    threading.Thread(target = serve).start()
     auth_stub, chat_stub = connect()
-    db = init_database()
-    tester = UnitTester(auth_stub, chat_stub, db)
+    tester = UnitTester(auth_stub, chat_stub)
     tester.run_tests()

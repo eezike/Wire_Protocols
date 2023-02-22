@@ -4,6 +4,7 @@ import pickle
 class Database():
     def __init__(self, filename = './db.pkl') -> None:
         self.db = None
+        print(filename)
         self.filename = filename
         
     def storeData(self):

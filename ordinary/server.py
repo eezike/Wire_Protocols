@@ -39,7 +39,7 @@ class Server:
 		self.message_queue = defaultdict(queue.Queue)
 
 	def send_in_queue(self, socket : socket):
-		while True:
+		while socket:
 			message = self.message_queue[socket].get()
 			if type(message) is list:
 				Stub(socket).SendStream(message)
@@ -170,7 +170,7 @@ class Server:
 				response = Response(success=True, message= "Registration Successful")
 				self.message_queue[clientsocket].put(response)
 
-				for other_socket in self.authenticated_users:
+				for other_socket in self.authenticated_users.values():
 					response = AddUserResponse(username=registerreq.username)
 					self.message_queue[other_socket].put(response)
 				
@@ -257,9 +257,12 @@ class Server:
 			return
 
 		# Inform all sockets that an account has been deleted
-		for other_socket in self.authenticated_users:
+		for other_socket in self.authenticated_users.values():
 			response = DeleteUserResponse(username=delete_user_req.username)
 			self.message_queue[other_socket].put(response)
+
+		del self.authenticated_users[delete_user_req.username]
+
 		
 
 	def get_messages(self, message_type: int, payload: bytes, clientsocket: socket) -> None:

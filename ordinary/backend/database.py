@@ -1,9 +1,6 @@
 import sqlite3
 from contextlib import closing
 
-import sqlite3
-from contextlib import closing
-
 class Database:
     def __init__(self, name="chatroom.db"):
         # If no database name is provided, use the default name
@@ -87,7 +84,17 @@ class Database:
             cursor.execute("DELETE FROM Users WHERE username = ?", (username,))
             self.conn.commit()
 
-            # TODO: need to delete messages addressed to that user as well upon deletion
+            # Delete messages addressed to that user as well upon deletion
+            cursor.execute("DELETE FROM Messages WHERE sender = ?", (username,))
+    
+    def clear(self):
+        # Delete db
+        with closing(self.conn.cursor()) as cursor:
+            cursor.execute('DELETE FROM Users')
+            cursor.execute('DELETE FROM Messages')
+        self.conn.commit()
+        return True
+
 
 
 

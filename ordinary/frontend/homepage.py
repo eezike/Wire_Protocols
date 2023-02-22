@@ -42,9 +42,9 @@ class HomePage(tk.Frame):
 
     def send_message(self):
         # Get the message content and check for errors
-        content = self.message_input.get("1.0", 'end-1c')
+        content = self.message_input.get("1.0", 'end-1c').strip()
 
-        if self.recipient.get().strip() == "" or content.strip() == "":
+        if self.recipient.get().strip() == "" or content == "":
             messagebox.showerror("Error", "Invalid recipient or message")
             return
         if len(content) > 256:
@@ -56,8 +56,8 @@ class HomePage(tk.Frame):
 
         # Send the message and add it to the listbox
         self.master.client.send_message(self.recipient.get(), content)
-        self.add_message(self.recipient.get(), content)
-        self.message_input.delete("1.0", tk.END)
+        # self.add_message(self.recipient.get(), content)
+        # self.message_input.delete("1.0", tk.END)
 
     def add_message(self, other, content, receiver=False):
         # Add a message to the listbox
@@ -89,8 +89,12 @@ class HomePage(tk.Frame):
             if message_type == MESSAGE_TYPES.SingleMessageResponse:
                 self.add_message(response.sender, response.content, True)
             elif message_type == MESSAGE_TYPES.Response:
-                # print(response)
-                pass
+                if not response.success:
+                    messagebox.showerror("Failure", response.message)
+                else:
+                    # self.add_message(self.recipient.get(), self.message_input.get("1.0", 'end-1c').strip())
+                    # self.message_input.delete("1.0", tk.END)
+                    pass
             elif message_type == MESSAGE_TYPES.Error:
                 messagebox.showerror("Error", response.message)
             elif message_type == MESSAGE_TYPES.AddUserResponse:

@@ -12,10 +12,13 @@ class Server:
 	Server class than can accept client connections and respond to client requestions
 	'''
 
-	def __init__(self, port : int = 9999, max_clients : int = 10, name : str = None):
+	def __init__(self, port : int = 50051, max_clients : int = 10, dbname : str = None, silent : bool = False):
 
 		# set up a socket server with specified parameters
 		self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+		# Yes/No printing
+		self.SILENT = silent 
 
 		# retreives hostname on host computer
 		self.HOST = socket.gethostname()
@@ -27,7 +30,7 @@ class Server:
 		self.PORT = port
 
 		# initialize the sql database with the server
-		self.db = database.Database(name)
+		self.db = database.Database(dbname)
 
 		# dict that tracks an authenticated user to their associated client sockets: (username : str) -> (list[clientsocket : socket])
 		self.authenticated_users = dict()
@@ -56,14 +59,17 @@ class Server:
 		# starts listening for incoming client connections
 		self.server.listen(self.MAX_CLIENTS)
 
-		print("Server IP: ", self.IP)
-		print(f"Listening on port {self.PORT}")
+		if not self.SILENT:
+			print("Server IP: ", self.IP)
+			print(f"Listening on port {self.PORT}")
 
 		while True:
 
 			# accepts a client socket request
 			clientsocket, addr = self.server.accept()
-			print(addr[0] + " has joined")
+			
+			if not self.SILENT:
+				print(addr[0] + " has joined")
 
 			# start a new thread to handle the client connection
 			threading.Thread(target = self.handle_client, args = (clientsocket, addr)).start()
@@ -87,7 +93,7 @@ class Server:
 			self.message_queue[clientsocket].put(response)
 
 			# start a new thread to handle the client connection
-			threading.Thread(target = self.send_in_queue, args = (clientsocket,)).start()
+			threading.Thread(target = self.send_in_queue, args = (clientsocket,), daemon= True).start()
 
 			# Loop forever
 			while True:
@@ -114,8 +120,8 @@ class Server:
 		
 		except (ConnectionResetError, BrokenPipeError):
 			# Print a message if the client disconnects unexpectedly
-			print(addr[0] + ' disconnected unexpectedly')
-
+			if not self.SILENT:
+				print(addr[0] + ' disconnected unexpectedly')
 		finally:
 			# Close the client socket
 			clientsocket.close()

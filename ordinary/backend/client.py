@@ -67,7 +67,7 @@ class Client:
         self.stub.Send(request, recieve= False)
 
     # Get a list of users currently connected to the chat server
-    def get_users(self) -> list[UsersStreamResponse]:
+    def get_users(self) -> list[str]:
         # Create a GetUsersRequest object with the username of the current user
         request = GetUsersRequest(username = self.username)
         # Send the request to the server and parse the response, which is a list of UsersStreamResponse objects
@@ -97,3 +97,8 @@ class Client:
         response = self.stub.Parse(message_type, payload)
 
         return message_type, response
+    
+    def close(self):
+        self.connected = False
+        self.username = None
+        self.clientsocket.close()

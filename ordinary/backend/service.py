@@ -65,7 +65,6 @@ class Stub:
 
         # If the header is empty, raise a ConnectionResetError
         if not header:
-            print("Connection broken by client")
             raise ConnectionResetError
 
         # Unpack the header data to get the message version, type, and payload size

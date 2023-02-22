@@ -32,7 +32,7 @@ def serve():
     chat_service_pb2_grpc.add_ChatServiceServicer_to_server(ChatServiceServicer(), server)
     server.add_insecure_port(HOST + ':' + PORT)
     server.start()
-    print("Server initialized at " + HOST + ', ' PORT)
+    print("Server initialized at " + HOST + ', ' + PORT)
     server.wait_for_termination()
 
 def connect():

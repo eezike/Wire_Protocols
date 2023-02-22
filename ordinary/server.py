@@ -2,7 +2,7 @@
 import socket
 import threading
 import backend.database as database
-from backend.service_classes import VERSION, HEADER_FORMAT, MESSAGE_TYPES, Message, SendMessageRequest, Response, GetUsersRequest, UsersStreamResponse, MessagesStreamResponse, LoginRequest, RegisterRequest, DeleteUserRequest, StreamEnd, Error, GetMessagesRequest, SingleMessageResponse, DeleteUserResponse
+from backend.service_classes import VERSION, HEADER_FORMAT, MESSAGE_TYPES, Message, SendMessageRequest, Response, GetUsersRequest, UsersStreamResponse, MessagesStreamResponse, LoginRequest, RegisterRequest, DeleteUserRequest, StreamEnd, Error, GetMessagesRequest, SingleMessageResponse, DeleteUserResponse, AddUserResponse
 from backend.service import Stub
 from collections import defaultdict
 import queue
@@ -30,7 +30,7 @@ class Server:
 		self.db = database.Database(name)
 
 		# dict that tracks an authenticated user to their associated client sockets: (username : str) -> (list[clientsocket : socket])
-		self.authenticated_users = defaultdict(list)
+		self.authenticated_users = dict()
 
 		# The max amount of users the server will accept
 		self.MAX_CLIENTS = max_clients
@@ -122,7 +122,7 @@ class Server:
 
 			# Remove the client from the list of authenticated users if it was authenticated
 			if username in self.authenticated_users:
-				self.authenticated_users[username].remove(clientsocket)
+				del self.authenticated_users[username]
 			
 			del self.message_queue[clientsocket]
 
@@ -144,7 +144,7 @@ class Server:
 				loginreq : LoginRequest = stub.Parse(message_type, payload)
 				self.db.login(loginreq.username, loginreq.password)
 
-				self.authenticated_users[loginreq.username].append(clientsocket)
+				self.authenticated_users[loginreq.username] = clientsocket
 
 				# Send a successful response message
 				response = Response(success=True, message= "Login Successful")
@@ -165,11 +165,16 @@ class Server:
 				registerreq : RegisterRequest = stub.Parse(message_type, payload)
 				self.db.register(registerreq.username, registerreq.password)
 				
-				self.authenticated_users[registerreq.username].append(clientsocket)
 
 				# Send a successful response message
 				response = Response(success=True, message= "Registration Successful")
 				self.message_queue[clientsocket].put(response)
+
+				for other_socket in self.authenticated_users:
+					response = AddUserResponse(username=registerreq.username)
+					self.message_queue[other_socket].put(response)
+				
+				self.authenticated_users[registerreq.username] = clientsocket
 
 				return registerreq.username
 			except Exception as e:
@@ -202,10 +207,10 @@ class Server:
 			# Check if the recipient is authenticated
 			if send_message_req.recipient in self.authenticated_users:
 				# Iterate over all the sockets belonging to the recipient
-				for other_socket in self.authenticated_users[send_message_req.recipient]:
-					# Create a response for each socket with the sender and content of the message
-					single_message = SingleMessageResponse(sender=send_message_req.sender, content=send_message_req.content)
-					self.message_queue[other_socket].put(single_message)
+				other_socket = self.authenticated_users[send_message_req.recipient]
+				# Create a response for each socket with the sender and content of the message
+				single_message = SingleMessageResponse(sender=send_message_req.sender, content=send_message_req.content)
+				self.message_queue[other_socket].put(single_message)
 			else:
 				# If recipient is not authenticated, save the message to the database
 				self.db.save_message(sender=send_message_req.sender, recipient=send_message_req.recipient, content=send_message_req.content)
@@ -252,10 +257,9 @@ class Server:
 			return
 
 		# Inform all sockets that an account has been deleted
-		for user in self.authenticated_users:
-			for other_socket in self.authenticated_users[user]:
-				response = DeleteUserResponse(username=delete_user_req.username)
-				self.message_queue[other_socket].put(response)
+		for other_socket in self.authenticated_users:
+			response = DeleteUserResponse(username=delete_user_req.username)
+			self.message_queue[other_socket].put(response)
 		
 
 	def get_messages(self, message_type: int, payload: bytes, clientsocket: socket) -> None:

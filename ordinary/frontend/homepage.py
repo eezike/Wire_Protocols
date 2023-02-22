@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import messagebox
-from backend.service_classes import MESSAGE_TYPES, MessagesStreamResponse, SingleMessageResponse, DeleteUserResponse, Error
+from backend.service_classes import MESSAGE_TYPES, MessagesStreamResponse
 import threading
 
 class HomePage(tk.Frame):
@@ -32,7 +32,7 @@ class HomePage(tk.Frame):
 
         # Create a button to delete account
         delete_account_button = tk.Button(self, text="Delete Account", command=self.delete_account)
-        delete_account_button.grid(row=3, column=2, sticky="E", padx=10, pady=10)
+        delete_account_button.grid(row=1, column=2, sticky="E", padx=10, pady=10)
 
         # Display any messages that are already in the inbox
         self.get_inbox()
@@ -92,6 +92,8 @@ class HomePage(tk.Frame):
                 print(response)
             elif message_type == MESSAGE_TYPES.Error:
                 messagebox.showerror("Error", response.message)
+            elif message_type == MESSAGE_TYPES.AddUserResponse:
+                self.options.append(response.username)
             elif message_type == MESSAGE_TYPES.DeleteUserResponse:
                 if self.username == response.username:
                     self.master.client.username = ""

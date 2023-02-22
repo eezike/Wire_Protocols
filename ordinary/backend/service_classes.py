@@ -26,6 +26,7 @@ class MESSAGE_TYPES():
     GetMessagesRequest = 11
     SingleMessageResponse = 12
     DeleteUserResponse = 13
+    AddUserResponse = 14
 
 # Define a base Message class that other message types will inherit from
 class Message:
@@ -307,6 +308,26 @@ class DeleteUserResponse(Message):
         self.username = username
 
     # Implement packing and unpacking for the DeleteUserResponse message type
+    def pack(self) -> bytes:
+        b_username = self.username.encode("ascii")
+        payload = struct.pack(self.FORMAT, b_username)
+
+        header = struct.pack(HEADER_FORMAT, VERSION, self.TYPE, len(payload))
+        return header + payload
+
+    def unpack(self, binary):
+        b_username = struct.unpack(self.FORMAT, binary)[0]
+        self.username = b_username.decode("ascii").rstrip('\x00')
+        return copy.deepcopy(self)
+
+# Define a AddUserResponse message type
+class AddUserResponse(Message):
+    def __init__(self, username = None):
+        self.FORMAT = "!20s"
+        self.TYPE = MESSAGE_TYPES.AddUserResponse
+        self.username = username
+
+    # Implement packing and unpacking for the AddUserResponse message type
     def pack(self) -> bytes:
         b_username = self.username.encode("ascii")
         payload = struct.pack(self.FORMAT, b_username)

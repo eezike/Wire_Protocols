@@ -1,6 +1,6 @@
 import struct
 import socket
-from backend.service_classes import VERSION, HEADER_FORMAT, MESSAGE_TYPES, Message, SendMessageRequest, Response, GetUsersRequest, UsersStreamResponse, MessagesStreamResponse, LoginRequest, RegisterRequest, DeleteUserRequest, StreamEnd, Error, GetMessagesRequest, SingleMessageResponse, DeleteUserResponse
+from backend.service_classes import VERSION, HEADER_FORMAT, MESSAGE_TYPES, Message, SendMessageRequest, Response, GetUsersRequest, UsersStreamResponse, MessagesStreamResponse, LoginRequest, RegisterRequest, DeleteUserRequest, StreamEnd, Error, GetMessagesRequest, SingleMessageResponse, DeleteUserResponse, AddUserResponse
 
 class Stub:
     '''
@@ -23,7 +23,8 @@ class Stub:
             MESSAGE_TYPES.Error : Error,
             MESSAGE_TYPES.GetMessagesRequest: GetMessagesRequest,
             MESSAGE_TYPES.SingleMessageResponse: SingleMessageResponse,
-            MESSAGE_TYPES.DeleteUserResponse: DeleteUserResponse
+            MESSAGE_TYPES.DeleteUserResponse: DeleteUserResponse,
+            MESSAGE_TYPES.AddUserResponse: AddUserResponse
         }
 
         # Define another dictionary that maps stream message types to message classes
@@ -113,6 +114,6 @@ class Stub:
             res = res + self.ParseStream(message_type)
         else:
             # If the message type is unknown, return a Error with a message indicating that the message type is unknown
-            res = Error( message= "Unknown message type")
+            res = Error(message= "Unknown message type")
 
         return res

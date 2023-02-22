@@ -40,47 +40,57 @@ class LoginPage(tk.Frame):
 
         
     def login(self):
+        # Check if client is connected
         if self.master.client.connected == False:
             messagebox.showerror("Error", "Not connected")
             return
 
+        # Get username and password from entry fields
         username = self.username_entry.get()
         password = self.password_entry.get()
 
-        # Check server response before logging in
+        # Check if username and password are not empty
         if len(username) == 0 or len(password) == 0:
             messagebox.showerror("Login Failed", "Username or password cannot be empty")
             return
-        
+
+        # Check if username and password are within the required length
         if len(username) > 20 or len(password) > 20:
             messagebox.showerror("Login Failed", "Invalid username or password")
             return
 
+        # Try to login with the given username and password
         response : Response = self.master.client.login(username, password)
 
+        # Check the server response
         if response.success:
             messagebox.showinfo("Login Successful", "Welcome " + username + "!")
-            self.master.switch_frame(HomePage)
+            self.master.switch_frame(2)
         else:
             messagebox.showerror("Login Failed", response.message)
+
             
     def register(self):
-
+        # Get username and password from entry fields
         username = self.username_entry.get()
         password = self.password_entry.get()
 
-        # Check if input is valid
+        # Check if username and password are not empty
         if len(username) == 0 or len(password) == 0:
             messagebox.showerror("Register Failed", "Username or password cannot be empty")
             return
+
+        # Check if username and password are within the required length
         elif len(username) > 20 or len(password) > 20:
             messagebox.showerror("Register Failed", "Username or password cannot exceed 20 characters")
             return
 
+        # Try to register with the given username and password
         response : Response = self.master.client.register(username, password)
 
+        # Check the server response
         if response.success:
             messagebox.showinfo("Register Successful", "Account created successfully!")
-            self.master.switch_frame(HomePage)
+            self.master.switch_frame(2)
         else:
             messagebox.showerror("Register Failed", response.message)
